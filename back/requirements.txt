@@ -10,3 +10,4 @@ python-dotenv
 motor
 pymongo
 SQLAlchemy
+dotenv
