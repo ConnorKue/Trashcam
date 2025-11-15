@@ -9,7 +9,7 @@ from ultralytics import YOLO
 # Stream setup
 # =========================
 
-VIDEO_URL = "http://129.161.130.138:8000/stream.mjpeg"
+VIDEO_URL = "http://"+os.getenv("PI_USER")+":"+os.getenv("PI_PASSWORD")+"@"+os.getenv("PI_IP")+":"+os.getenv("PI_PORT")+"/?action=stream.mjpeg"
 
 
 def open_stream():
