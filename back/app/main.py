@@ -1,9 +1,12 @@
 # backend/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from .config import settings
 from .routers import health
+from .routers import clearData
+from .routers import totalTrash
+from .routers import log   
+
 
 def create_app():
     app = FastAPI(
@@ -24,6 +27,9 @@ def create_app():
         allow_headers=["*"],
     )
     app.include_router(health.router)
+    app.include_router(clearData.router)
+    app.include_router(totalTrash.router)
+    app.include_router(log.router)
 
     return app
 

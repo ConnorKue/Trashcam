@@ -7,3 +7,8 @@ cd backend
 chmod +x start.sh
 pip install -r requirements.txt
 ./start.sh
+
+
+cuda:
+pip uninstall torch torchvision torchaudio
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121

@@ -1,13 +1,18 @@
 --extra-index-url https://download.pytorch.org/whl/cu121
 
-opencv-python==4.10.0.84
-torch==2.9.1
+# Core CV / ML (torch is installed via conda, not here)
 ultralytics
+opencv-python==4.10.0.84
+
+# Backend
 fastapi
 uvicorn[standard]
 pydantic
-python-dotenv
+SQLAlchemy
+
+# MongoDB
 motor
 pymongo
-SQLAlchemy
-dotenv
+
+# Env vars
+python-dotenv

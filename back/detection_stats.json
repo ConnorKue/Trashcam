@@ -1,0 +1,24 @@
+{
+  "runtime_seconds": 360.22462606430054,
+  "frames_processed": 7086,
+  "total_detections": 31,
+  "unique_items": 0,
+  "avg_confidence": 0.3463816455295009,
+  "avg_processing_time_ms": 29.708709716796875,
+  "avg_fps": 20.64275633308597,
+  "items_by_type": {
+    "metal": 8,
+    "paper": 3,
+    "liquid": 8,
+    "plastic": 7,
+    "glass": 5
+  },
+  "items_by_bin": {
+    "recycling": 23,
+    "trash": 8
+  },
+  "recycling_rate_percent": 74.19354838709677,
+  "total_co2_saved_kg": 1.397,
+  "total_co2_footprint_kg": 2.3900000000000006,
+  "detections_per_hour": 309.80669261650996
+}
