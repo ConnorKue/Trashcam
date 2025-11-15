@@ -12,7 +12,6 @@ from ultralytics import YOLO
 VIDEO_URL = "http://"+os.getenv("PI_USER")+":"+os.getenv("PI_PASSWORD")+"@"+os.getenv("PI_IP")+":"+os.getenv("PI_PORT")+"/?action=stream.mjpeg"
 
 
-
 def open_stream():
     cap = cv2.VideoCapture(VIDEO_URL, cv2.CAP_FFMPEG)
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
