@@ -5,11 +5,16 @@ from datetime import datetime
 import torch
 from ultralytics import YOLO
 
+from dotenv import load_dotenv
+import os
+
 # =========================
 # Stream setup
 # =========================
 
-VIDEO_URL = "http://"+os.getenv("PI_USER")+":"+os.getenv("PI_PASSWORD")+"@"+os.getenv("PI_IP")+":"+os.getenv("PI_PORT")+"/?action=stream.mjpeg"
+load_dotenv()
+
+VIDEO_URL = "http://"+str(os.getenv("PI_USER"))+":"+str(os.getenv("PI_PASSWORD"))+"@"+str(os.getenv("PI_IP"))+":"+str(os.getenv("PI_PORT"))+"/?action=stream.mjpeg"
 
 
 def open_stream():
