@@ -4,10 +4,6 @@ from dotenv import load_dotenv
 import os
 
 
-# "http://"+os.getenv("PI_IP")+":"+os.getenv("PI_PORT")+"/stream.mjpeg/?action=stream"
-
-
-
 
 
 
