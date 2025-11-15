@@ -4,12 +4,16 @@ from dotenv import load_dotenv
 import os
 
 
+# "http://"+os.getenv("PI_IP")+":"+os.getenv("PI_PORT")+"/stream.mjpeg/?action=stream"
+
+
+
 
 
 
 load_dotenv()
 
-VIDEO_URL = "http://"+os.getenv("PI_IP")+":"+os.getenv("PI_PORT")+"/stream.mjpeg"
+VIDEO_URL = "http://"+os.getenv("PI_USER")+":"+os.getenv("PI_PASSWORD")+"@"+os.getenv("PI_IP")+":"+os.getenv("PI_PORT")+"/?action=stream.mjpeg"
 
 def open_stream():
     cap = cv2.VideoCapture(VIDEO_URL, cv2.CAP_FFMPEG)
