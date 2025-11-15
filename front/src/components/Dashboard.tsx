@@ -9,7 +9,7 @@ export interface TrashCanData {
   name: string;
   fillLevel: number;
   weight: number;
-  lastEmptied: string;
+  lastEmptied: string; // timestamp
   status: "normal" | "warning" | "critical";
   location: string;
   targetCategory: "recyclable" | "organic" | "plastic" | "paper" | "general";
@@ -27,85 +27,45 @@ export interface TrashCanData {
   }>;
 }
 
+const initialTrashCanData: TrashCanData = {
+  id: "TC001",
+  name: "Main Entrance",
+  fillLevel: 45,
+  weight: 12.3,
+  lastEmptied: Date.now(),
+  status: "normal",
+  location: "Building A",
+  targetCategory: "recyclable",
+  categories: {
+    recyclable: 8,
+    organic: 3,
+    plastic: 12,
+    paper: 15,
+    general: 7
+  },
+  events: [
+    { timestamp: "14:23:45", type: "deposit", message: "Paper item detected" },
+    { timestamp: "14:18:32", type: "contamination", message: "Non-recyclable item detected" },
+    { timestamp: "14:15:10", type: "deposit", message: "Plastic bottle detected" },
+    { timestamp: "14:12:03", type: "deposit", message: "Recyclable can detected" },
+    { timestamp: "12:30:00", type: "empty", message: "Trash can emptied" },
+    { timestamp: "14:18:32", type: "contamination", message: "Non-recyclable item detected" },
+    { timestamp: "12:15:22", type: "alert", message: "Fill level reached 75%" },
+    { timestamp: "14:18:32", type: "contamination", message: "Non-recyclable item detected" },
+    { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
+    { timestamp: "14:12:03", type: "deposit", message: "Recyclable can detected" },
+    { timestamp: "12:30:00", type: "empty", message: "Trash can emptied" },
+    { timestamp: "14:18:32", type: "contamination", message: "Non-recyclable item detected" },
+    { timestamp: "12:15:22", type: "alert", message: "Fill level reached 75%" },
+    { timestamp: "14:12:03", type: "deposit", message: "Recyclable can detected" },
+    { timestamp: "12:30:00", type: "empty", message: "Trash can emptied" },
+    { timestamp: "14:18:32", type: "contamination", message: "Non-recyclable item detected" },
+    { timestamp: "12:15:22", type: "alert", message: "Fill level reached 75%" },
+  ]
+};
+
 export function Dashboard() {
-  const [trashCans, setTrashCans] = useState<TrashCanData[]>([
-    {
-      id: "TC001",
-      name: "Main Entrance",
-      fillLevel: 45,
-      weight: 12.3,
-      lastEmptied: "2 hours ago",
-      status: "normal",
-      location: "Building A",
-      targetCategory: "recyclable",
-      categories: {
-        recyclable: 8,
-        organic: 3,
-        plastic: 12,
-        paper: 15,
-        general: 7
-      },
-      events: [
-        { timestamp: "14:23:45", type: "deposit", message: "Paper item detected" },
-        { timestamp: "14:18:32", type: "contamination", message: "Non-recyclable item detected" },
-        { timestamp: "14:15:10", type: "deposit", message: "Plastic bottle detected" },
-        { timestamp: "14:12:03", type: "deposit", message: "Recyclable can detected" },
-        { timestamp: "12:30:00", type: "empty", message: "Trash can emptied" },
-        { timestamp: "12:15:22", type: "alert", message: "Fill level reached 75%" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-        { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" },
-      ]
-    }
-  ]);
-
-  const defaultTrashCanData: TrashCanData = {
-    id: "TC001",
-    name: "Main Entrance",
-    fillLevel: 45,
-    weight: 12.3,
-    lastEmptied: "2 hours ago",
-    status: "normal",
-    location: "Building A",
-    targetCategory: "recyclable",
-    categories: {
-      recyclable: 8,
-      organic: 3,
-      plastic: 12,
-      paper: 15,
-      general: 7
-    },
-    events: [
-      { timestamp: "14:23:45", type: "deposit", message: "Paper item detected" },
-      { timestamp: "14:18:32", type: "contamination", message: "Non-recyclable item detected" },
-      { timestamp: "14:15:10", type: "deposit", message: "Plastic bottle detected" },
-      { timestamp: "14:12:03", type: "deposit", message: "Recyclable can detected" },
-      { timestamp: "12:30:00", type: "empty", message: "Trash can emptied" },
-      { timestamp: "12:15:22", type: "alert", message: "Fill level reached 75%" },
-      { timestamp: "11:45:18", type: "deposit", message: "Organic waste detected" }
-    ]
-  };
-
-  const updateTrashCan = (updates: Partial<TrashCanData>) => {
-    setTrashCans([{ ...trashCans[0], ...updates }]);
-  };
-
-  const resetTrashCan = () => {
-    setTrashCans([defaultTrashCanData]);
-  };
-
+  const [trashCans, setTrashCans] = useState<TrashCanData[]>([initialTrashCanData]);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -115,6 +75,78 @@ export function Dashboard() {
 
     return () => clearInterval(timer);
   }, []);
+
+  const calculateStatus = (fillLevel: number): "normal" | "warning" | "critical" => {
+    if (fillLevel >= 90) return "critical";
+    if (fillLevel >= 75) return "warning";
+    return "normal";
+  };
+  const updateTrashCan = (id: string, updates: Partial<TrashCanData>) => {
+    setTrashCans(prev => prev.map(can => {
+      if (can.id !== id) return can;
+      const updatedCan = { ...can, ...updates };
+      if (updates.fillLevel !== undefined) {
+        updatedCan.status = calculateStatus(updates.fillLevel);
+      }
+      return updatedCan;
+    }));
+  };
+
+  const resetTrashCan = (id: string) => {
+    setTrashCans(prev => prev.map(can =>
+                                  can.id === id ? {
+                                    ...initialTrashCanData,
+                                    id: can.id,
+                                    name: can.name,
+                                    location: can.location
+                                  } : can
+                                 ));
+  };
+
+  const emptyTrashCan = (id: string) => {
+    setTrashCans(prev => prev.map(can => {
+      if (can.id !== id) return can;
+
+      const emptiedCategories = Object.keys(can.categories).reduce((acc, key) => {
+        acc[key as keyof typeof can.categories] = 0;
+        return acc;
+      }, {} as typeof can.categories);
+
+      const now = new Date();
+      const currentTimeString = now.toLocaleTimeString('en-US', { hour12: false });
+
+      return {
+        ...can,
+        fillLevel: 0,
+        weight: 0,
+        categories: emptiedCategories,
+        lastEmptied: now.toISOString(), // use the same timestamp
+        status: "normal",
+        events: [
+          {
+            timestamp: currentTimeString,
+            type: "empty",
+            message: "Trash can emptied"
+          },
+          ...can.events.slice(0, 9) // keep only recent events
+        ]
+      };
+    }));
+  };
+
+  const removeEvent = (trashCanId: string, eventIndex: number) => {
+    setTrashCans(prev => prev.map(can => {
+      if (can.id !== trashCanId) return can;
+
+      const updatedEvents = [...can.events];
+      updatedEvents.splice(eventIndex, 1);
+
+      return {
+        ...can,
+        events: updatedEvents
+      };
+    }));
+  };
 
   const totalCans = trashCans.length;
   const criticalCans = trashCans.filter(can => can.status === "critical").length;
@@ -145,19 +177,26 @@ export function Dashboard() {
             <TrashCanCard
               key={trashCan.id}
               data={trashCan}
-              onUpdate={updateTrashCan}
-              onReset={resetTrashCan}
+              onUpdate={(updates) => updateTrashCan(trashCan.id, updates)}
+              onReset={() => resetTrashCan(trashCan.id)}
+              emptyTrash={() => emptyTrashCan(trashCan.id)}
+              currentTime={currentTime}
             />
           ))}
         </div>
         <div className="lg:col-span-1">
           {trashCans.map((trashCan) => (
-            <EventLog key={`events-${trashCan.id}`} events={trashCan.events} />
+            <EventLog
+              key={`events-${trashCan.id}`}
+              events={trashCan.events}
+              onRemoveEvent={(index) => removeEvent(trashCan.id, index)}
+            />
           ))}
         </div>
       </div>
 
       {/* Footer */}
+      {/*
       <div className="mt-8 text-center">
         <div className="inline-block px-4 py-2 bg-[#1a1a3e] border-2 border-[#50d070]/30">
           <p className="text-[#50d070]/70 tracking-wide" style={{ fontFamily: 'monospace' }}>
@@ -165,6 +204,7 @@ export function Dashboard() {
           </p>
         </div>
       </div>
+      */}
     </div>
   );
 }

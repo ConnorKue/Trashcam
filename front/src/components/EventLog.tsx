@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ScrollArea } from "./ui/scroll-area";
 import { Clock, Trash2, AlertTriangle, Package } from "lucide-react";
 
@@ -10,9 +11,12 @@ interface Event {
 interface EventLogProps {
   events: Event[];
   scrollHeight?: number;
+  onRemoveEvent?: (index: number) => void;
 }
 
-export function EventLog({ events, scrollHeight = 800 }: EventLogProps) {
+export function EventLog({ events, scrollHeight = 800, onRemoveEvent }: EventLogProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
   const getEventIcon = (type: string) => {
     switch (type) {
       case "deposit":
@@ -43,6 +47,12 @@ export function EventLog({ events, scrollHeight = 800 }: EventLogProps) {
     }
   };
 
+  const handleRemoveEvent = (index: number) => {
+    if (onRemoveEvent) {
+      onRemoveEvent(index);
+    }
+  };
+
   return (
     <div className="bg-[#1a1a3e] border-4 border-[#50d070] p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)]">
       <div className="mb-4">
@@ -56,11 +66,18 @@ export function EventLog({ events, scrollHeight = 800 }: EventLogProps) {
           {events.map((event, index) => {
             const Icon = getEventIcon(event.type);
             const color = getEventColor(event.type);
+            const isHovered = hoveredIndex === index;
             return (
               <div
                 key={index}
-                className="bg-[#0f0f23] border-2 p-3"
-                style={{ borderColor: `${color}66` }}
+                className="bg-[#0f0f23] border-2 p-3 cursor-pointer transition-all duration-200 ease-in-out"
+                style={{
+                  borderColor: isHovered ? color : `${color}66`,
+                  boxShadow: isHovered ? `0 0 8px ${color}80` : 'none'
+                }}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                onClick={() => handleRemoveEvent(index)}
               >
                 <div className="flex items-start gap-2">
                   <Icon className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color }} />

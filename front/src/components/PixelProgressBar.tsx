@@ -15,6 +15,7 @@ export function PixelProgressBar({ value, color }: PixelProgressBarProps) {
           className="h-6 flex-1 border-2 border-[#0f0f23]"
           style={{
             backgroundColor: index < filledSegments ? color : '#1a1a3e',
+            border: '1px solid #25493b',
             boxShadow: index < filledSegments ? `0 0 8px ${color}66` : 'none'
           }}
         />

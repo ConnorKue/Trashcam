@@ -9,7 +9,7 @@ interface StatusBarProps {
 
 export function StatusBar({ totalCans, criticalCans, warningCans, currentTime }: StatusBarProps) {
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { 
+    return date.toLocaleTimeString('en-US', {
       hour12: false,
       hour: '2-digit',
       minute: '2-digit',
@@ -22,7 +22,7 @@ export function StatusBar({ totalCans, criticalCans, warningCans, currentTime }:
       <div className="bg-[#1a1a3e] border-2 border-[#50d070] px-4 py-2 flex items-center gap-2">
         <Activity className="w-4 h-4 text-[#50d070]" />
         <span className="text-[#50d070] tracking-wider" style={{ fontFamily: 'monospace' }}>
-          TOTAL: {totalCans}
+          ONLINE: {totalCans}
         </span>
       </div>
 

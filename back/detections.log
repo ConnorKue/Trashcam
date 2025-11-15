@@ -236,3 +236,52 @@
 2025-11-15T17:22:52.837091 - grocery bag -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
 2025-11-15T17:25:22.910467 - paper bag -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
 2025-11-15T17:27:55.741057 - shopping bag -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:29:44.899962 - cold drink cup -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:29:45.000187 - glass cup -> glass -> recycling | co2_item_kg=0.1500, co2_saved_kg=0.0450
+2025-11-15T17:29:45.184134 - soda bottle -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:29:45.249380 - plastic bottle -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:29:45.252403 - cold drink cup -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:29:45.400856 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:29:45.445060 - beer can -> metal -> recycling | co2_item_kg=0.1000, co2_saved_kg=0.0900
+2025-11-15T17:29:45.542415 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:29:45.545399 - beer can -> metal -> recycling | co2_item_kg=0.1000, co2_saved_kg=0.0900
+2025-11-15T17:29:45.793211 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:29:45.976148 - glass cup -> glass -> recycling | co2_item_kg=0.1500, co2_saved_kg=0.0450
+2025-11-15T17:29:46.134764 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:29:46.336265 - glass cup -> glass -> recycling | co2_item_kg=0.1500, co2_saved_kg=0.0450
+2025-11-15T17:29:46.428802 - glass bottle -> glass -> recycling | co2_item_kg=0.1500, co2_saved_kg=0.0450
+2025-11-15T17:29:46.534982 - water bottle -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:29:47.070538 - glass jar -> glass -> recycling | co2_item_kg=0.1500, co2_saved_kg=0.0450
+2025-11-15T17:29:47.073523 - beer can -> metal -> recycling | co2_item_kg=0.1000, co2_saved_kg=0.0900
+2025-11-15T17:29:47.200921 - cup lid -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:30:09.827768 - cup lid -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:30:21.880374 - shopping bag -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:30:46.012420 - paper bag -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
+2025-11-15T17:30:56.380330 - shopping bag -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:30:58.071236 - paper towel -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
+2025-11-15T17:30:58.487495 - cardboard box -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
+2025-11-15T17:31:17.377248 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:31:17.495144 - paper bowl -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
+2025-11-15T17:31:17.712099 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:31:17.713064 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:31:17.715067 - beer can -> metal -> recycling | co2_item_kg=0.1000, co2_saved_kg=0.0900
+2025-11-15T17:31:17.904276 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:31:17.951323 - beer can -> metal -> recycling | co2_item_kg=0.1000, co2_saved_kg=0.0900
+2025-11-15T17:31:18.026675 - tin can -> metal -> recycling | co2_item_kg=0.1000, co2_saved_kg=0.0900
+2025-11-15T17:31:18.120273 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:31:18.123202 - cup lid -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:31:18.327910 - beer can -> metal -> recycling | co2_item_kg=0.1000, co2_saved_kg=0.0900
+2025-11-15T17:31:18.420115 - cup lid -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:31:18.728368 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:31:18.731372 - glass jar -> glass -> recycling | co2_item_kg=0.1500, co2_saved_kg=0.0450
+2025-11-15T17:31:18.779151 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:31:18.954266 - tin can -> metal -> recycling | co2_item_kg=0.1000, co2_saved_kg=0.0900
+2025-11-15T17:31:18.957556 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:31:19.308578 - glass cup -> glass -> recycling | co2_item_kg=0.1500, co2_saved_kg=0.0450
+2025-11-15T17:31:19.359533 - tin can -> metal -> recycling | co2_item_kg=0.1000, co2_saved_kg=0.0900
+2025-11-15T17:31:19.637637 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:31:20.261199 - paper towel -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
+2025-11-15T17:32:07.734325 - cardboard box -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
+2025-11-15T17:32:08.406937 - cardboard box -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
+2025-11-15T17:32:08.837152 - cardboard box -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
+2025-11-15T17:32:08.893099 - cardboard box -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200

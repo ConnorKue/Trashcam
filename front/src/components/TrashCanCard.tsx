@@ -7,11 +7,37 @@ import { ControlPanel } from "./ControlPanel";
 
 interface TrashCanCardProps {
   data: TrashCanData;
-  onUpdate: (id: string, fillLevel: number) => void;
+  onUpdate: (updates: Partial<TrashCanData>) => void;
   onReset: (id: string) => void;
+  emptyTrash: (id: string) => void;
+  currentTime: Date;
 }
 
-export function TrashCanCard({ data, onUpdate, onReset }: TrashCanCardProps) {
+const getTimeAgo = (timestamp: string, currentTime: Date): string => {
+  if (!timestamp) return "never";
+
+  const emptiedTime = new Date(timestamp);
+  const diffInMs = currentTime.getTime() - emptiedTime.getTime();
+  const diffInSeconds = Math.floor(diffInMs / 1000);
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  const diffInDays = Math.floor(diffInHours / 24);
+
+  if (diffInDays > 0) {
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  } else if (diffInHours > 0) {
+    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+  } else if (diffInMinutes > 0) {
+    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+  } else {
+    const hours = String(emptiedTime.getHours()).padStart(2, "0");
+    const minutes = String(emptiedTime.getMinutes()).padStart(2, "0");
+    const seconds = String(emptiedTime.getSeconds()).padStart(2, "0");
+    return `just now (${hours}:${minutes}:${seconds})`;
+  }
+};
+
+export function TrashCanCard({ data, onUpdate, onReset, emptyTrash, currentTime }: TrashCanCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "critical":
@@ -97,7 +123,7 @@ export function TrashCanCard({ data, onUpdate, onReset }: TrashCanCardProps) {
             </span>
           </div>
           <p className="text-[#50d070] tracking-wider" style={{ fontFamily: 'monospace' }}>
-            {data.lastEmptied}
+            {getTimeAgo(data.lastEmptied, currentTime)}
           </p>
         </div>
       </div>
@@ -121,9 +147,11 @@ export function TrashCanCard({ data, onUpdate, onReset }: TrashCanCardProps) {
 
       {/* Control Panel */}
       <ControlPanel
-        data={data}
-        onUpdate={onUpdate}
-        onReset={onReset}
+      data={data}
+      onUpdate={onUpdate}
+      onReset={() => onReset(data.id)}
+      emptyTrash={() => emptyTrash(data.id)}
+      currentTime={currentTime}
       />
 
     </div>

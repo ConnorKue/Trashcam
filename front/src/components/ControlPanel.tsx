@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Settings, RotateCcw, Edit3, Save, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, RotateCcw, Edit3, Trash2, Save, X } from "lucide-react";
 import { TrashCanData } from "./Dashboard";
 import { Button } from "./ui/button";
 import {
@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "./ui/dialog";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
@@ -23,14 +24,31 @@ interface ControlPanelProps {
   data: TrashCanData;
   onUpdate: (updates: Partial<TrashCanData>) => void;
   onReset: () => void;
+  emptyTrash: () => void;
+  currentTime: Date;
 }
 
-export function ControlPanel({ data, onUpdate, onReset }: ControlPanelProps) {
+export function ControlPanel({ data, onUpdate, onReset, emptyTrash, currentTime }: ControlPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [editedData, setEditedData] = useState(data);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setEditedData(data);
+    }
+  }, [data, isOpen]);
+
   const handleSave = () => {
-    onUpdate(editedData);
+    // Recalculate fillLevel based on category totals
+    const totalItems = Object.values(editedData.categories).reduce((sum, count) => sum + count, 0);
+    const calculatedFillLevel = Math.min(100, Math.round((totalItems / 50) * 100)); // Assuming 50 items = 100%
+    const calculatedWeight = Math.min(25, totalItems * 0.5); // Assuming 0.5kg per item, max 25kg
+    const updates = {
+      ...editedData,
+      fillLevel: calculatedFillLevel,
+      weight: parseFloat(calculatedWeight.toFixed(1))
+    };
+    onUpdate(updates);
     setIsOpen(false);
   };
 
@@ -40,13 +58,14 @@ export function ControlPanel({ data, onUpdate, onReset }: ControlPanelProps) {
   };
 
   const updateCategory = (category: keyof typeof data.categories, value: number) => {
-    setEditedData({
-      ...editedData,
+    const newValue = Math.max(0, value);
+    setEditedData(prev => ({
+      ...prev,
       categories: {
-        ...editedData.categories,
-        [category]: value
+        ...prev.categories,
+        [category]: newValue
       }
-    });
+    }));
   };
 
   const categoryLabels = {
@@ -109,6 +128,9 @@ export function ControlPanel({ data, onUpdate, onReset }: ControlPanelProps) {
               <DialogTitle className="text-[#50d070] tracking-wider" style={{ fontFamily: 'monospace' }}>
                 === EDIT TRASH CAN DATA ===
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                Edit trash can properties including fill level, weight, categories, and location information.
+              </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 mt-4">
@@ -144,6 +166,33 @@ export function ControlPanel({ data, onUpdate, onReset }: ControlPanelProps) {
                   />
                 </div>
               </div>
+
+              <div>
+                <Label className="text-[#50d070]/70 tracking-wide mb-2 block" style={{ fontFamily: 'monospace' }}>
+                  NAME:
+                </Label>
+                <Input
+                  type="text"
+                  value={editedData.name}
+                  onChange={(e) => setEditedData({ ...editedData, name: e.target.value })}
+                  className="bg-[#0f0f23] border-2 border-[#50d070]/50 text-[#50d070] tracking-wide"
+                  style={{ fontFamily: 'monospace' }}
+                />
+              </div>
+
+              <div>
+                <Label className="text-[#50d070]/70 tracking-wide mb-2 block" style={{ fontFamily: 'monospace' }}>
+                  ID:
+                </Label>
+                <Input
+                  type="text"
+                  value={editedData.id}
+                  onChange={(e) => setEditedData({ ...editedData, id: e.target.value })}
+                  className="bg-[#0f0f23] border-2 border-[#50d070]/50 text-[#50d070] tracking-wide"
+                  style={{ fontFamily: 'monospace' }}
+                />
+              </div>
+
 
               <div>
                 <Label className="text-[#50d070]/70 tracking-wide mb-2 block" style={{ fontFamily: 'monospace' }}>
@@ -204,6 +253,16 @@ export function ControlPanel({ data, onUpdate, onReset }: ControlPanelProps) {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Empty Trash Button */}
+        <Button
+          onClick={emptyTrash}
+          className="w-full bg-[#1a1a3e] border-2 border-[#50d070] text-[#50d070] hover:bg-[#50d070] hover:text-[#0f0f23] tracking-wider transition-colors"
+          style={{ fontFamily: 'monospace' }}
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          EMPTY TRASH
+        </Button>
 
         {/* Reset Button */}
         <Button
