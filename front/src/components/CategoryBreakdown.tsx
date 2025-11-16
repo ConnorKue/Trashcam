@@ -11,7 +11,7 @@ interface CategoryBreakdownProps {
 export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
   const categoryConfig = [
     { key: 'recyclable', label: 'RECYCLABLE', icon: Recycle, color: '#50d0e0' },
-    { key: 'organic', label: 'ORGANIC/COMPOST', icon: Leaf, color: '#60d060' },
+    { key: 'organic', label: 'ORGANIC', icon: Leaf, color: '#60d060' },
     { key: 'general', label: 'GENERAL TRASH', icon: Trash2, color: '#d050d0' }
   ];
   // purple: #d050d0

@@ -21,21 +21,6 @@ interface EventLogProps {
   scrollHeight?: number;
 }
 
-// Simple classification function for 3-category system
-const classifyItem = (cls: string): "recyclable" | "organic" | "general" => {
-  const c = cls.toLowerCase();
-  if (c.includes("plastic") || c.includes("paper") || c.includes("cardboard") ||
-      c.includes("metal") || c.includes("glass") || c.includes("can") ||
-      c.includes("aluminum")) {
-    return "recyclable";
-  } else if (c.includes("organic") || c.includes("compost") || c.includes("food") ||
-             c.includes("biodegradable") || c.includes("fruit") || c.includes("vegetable")) {
-    return "organic";
-  } else {
-    return "general";
-  }
-};
-
 export function EventLog({
   events,
   onRemoveEvent,

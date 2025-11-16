@@ -1,7 +1,7 @@
 import { AlertTriangle, Target } from "lucide-react";
 
 interface ContaminationTrackerProps {
-  targetCategory: "recyclable" | "organic/compost" | "general";
+  targetCategory: "recyclable" | "organic" | "general";
   categories: {
     recyclable: number;
     organic: number;
@@ -12,7 +12,7 @@ interface ContaminationTrackerProps {
 export function ContaminationTracker({ targetCategory, categories }: ContaminationTrackerProps) {
   const categoryLabels = {
     recyclable: 'RECYCLABLE',
-    organic: 'ORGANIC/COMPOST',
+    organic: 'ORGANIC',
     general: 'GENERAL TRASH'
   };
 

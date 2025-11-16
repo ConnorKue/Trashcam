@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TrashCanCard } from "./TrashCanCard";
 import { StatusBar } from "./StatusBar";
 import { EventLog } from "./EventLog";
@@ -19,7 +19,7 @@ export interface TrashCanData {
   lastEmptied: string; // ISO timestamp
   status: "normal" | "warning" | "critical";
   location: string;
-  targetCategory: "recyclable" | "organic/compost" | "general";
+  targetCategory: "recyclable" | "organic" | "general";
   categories: {
     recyclable: number;
     organic: number;
@@ -35,16 +35,16 @@ export interface TrashCanData {
 const initialTrashCanData: TrashCanData = {
   id: "TC001",
   name: "Main Entrance",
-  fillLevel: 45,
-  weight: 12.3,
+  fillLevel: 0,
+  weight: 0,
   lastEmptied: new Date().toISOString(),
   status: "normal",
   location: "Building A",
   targetCategory: "recyclable",
   categories: {
-    recyclable: 20,
-    organic: 15,
-    general: 10,
+    recyclable: 0,
+    organic: 0,
+    general: 0,
   },
   events: [],
 };
@@ -55,12 +55,28 @@ interface BackendLog {
   class: string;
 }
 
+// Simple classification function for 3-category system
+const classifyItem = (cls: string): "recyclable" | "organic" | "general" => {
+  const c = cls.toLowerCase();
+  if (c.includes("plastic") || c.includes("paper") || c.includes("cardboard") ||
+      c.includes("metal") || c.includes("glass") || c.includes("can") ||
+      c.includes("aluminum")) {
+    return "recyclable";
+  } else if (c.includes("organic") || c.includes("compost") || c.includes("food") ||
+             c.includes("biodegradable") || c.includes("fruit") || c.includes("vegetable")) {
+    return "organic";
+  } else {
+    return "general";
+  }
+};
+
 export function Dashboard() {
   const [trashCans, setTrashCans] = useState<TrashCanData[]>([
     initialTrashCanData,
   ]);
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  const processedLogs = useRef<Set<string>>(new Set());
   const primaryTargetCategory = trashCans[0]?.targetCategory;
 
   const calculateStatus = (
@@ -69,6 +85,12 @@ export function Dashboard() {
     if (fillLevel >= 90) return "critical";
     if (fillLevel >= 75) return "warning";
     return "normal";
+  };
+
+  // calculate fill level based on item count (assuming 50 items = 100% fill)
+  const calculateFillLevel = (categories: TrashCanData['categories']): number => {
+    const totalItems = Object.values(categories).reduce((sum, count) => sum + count, 0);
+    return Math.min(100, Math.round((totalItems / 50) * 100));
   };
 
   // Clock
@@ -87,42 +109,86 @@ export function Dashboard() {
         const data = await getLogs();
         const logs = data.logs as BackendLog[];
 
-        const detectionEvents = logs.map((log): TrashCanData["events"][number] => {
-          const ts = log.timestamp;
-          const cls = (log.class || "").toLowerCase();
-          const itemName = log.item || "";
-          const target = primaryTargetCategory?.toLowerCase();
-
-          const isContamination =
-            !!target && cls && cls !== target;
-
-          const type: EventType = isContamination
-            ? "contamination"
-            : "deposit";
-
-          const message = isContamination
-            ? `Non-${primaryTargetCategory?.toUpperCase()} item detected (${itemName} – ${cls || "unknown"})`
-            : `${cls || "item"} detected (${itemName})`;
-
-          return {
-            timestamp: ts,
-            type,
-            message,
-          };
-        });
-
         setTrashCans((prev) =>
           prev.map((can, index) => {
             if (index !== 0) return can;
 
-            // keep manual events (empty, alert), replace only deposit/contamination
+            let updatedCategories = { ...can.categories };
+            const newEvents: TrashCanData["events"][] = [];
+            let hasNewItems = false;
+
+            // Process each log to update categories and create events
+            logs.forEach((log) => {
+              const logSignature = `${log.timestamp}-${log.item}-${log.class}`;
+              // Skip if we've already processed this log
+              if (processedLogs.current.has(logSignature)) {
+                return;
+              }
+
+              processedLogs.current.add(logSignature);
+              hasNewItems = true;
+
+              const detectedCategory = classifyItem(log.class);
+              const isContamination = detectedCategory !== can.targetCategory;
+
+              // update the category counter
+              updatedCategories[detectedCategory] += 1;
+
+              // create event
+              const eventType: EventType = isContamination ? "contamination" : "deposit";
+              const message = isContamination
+                ? `Non-${can.targetCategory.toUpperCase()}: ${detectedCategory} (${log.item} – ${log.class || "unknown"})`
+                : `${log.class || "item"} detected (${log.item})`;
+
+              newEvents.push({
+                timestamp: log.timestamp,
+                type: eventType,
+                message,
+              });
+            });
+
+            if (!hasNewItems) {
+              return can;
+            }
+
+            // calculate new fill level based on updated categories
+            const newFillLevel = calculateFillLevel(updatedCategories);
+            const newStatus = calculateStatus(newFillLevel);
+
+            // keep manual events and add new detection events
             const manualEvents = can.events.filter(
               (e) => e.type === "empty" || e.type === "alert"
             );
 
+            // check if we need to add a fill level alert
+            let finalEvents = [...manualEvents, ...newEvents];
+            const prevFill = can.fillLevel;
+
+            if (newFillLevel >= 80 && prevFill < 80) {
+              const now = new Date();
+              const timeStr = now.toLocaleTimeString("en-US", {
+                hour12: false,
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              });
+
+              finalEvents.unshift({
+                timestamp: timeStr,
+                type: "alert",
+                message: `Fill level reached ${newFillLevel}%`,
+              });
+            }
+
+            // limit events to last 50
+            finalEvents = finalEvents.slice(0, 50);
+
             return {
               ...can,
-              events: [...manualEvents, ...detectionEvents],
+              categories: updatedCategories,
+              fillLevel: newFillLevel,
+              status: newStatus,
+              events: finalEvents,
             };
           })
         );
@@ -136,64 +202,16 @@ export function Dashboard() {
     return () => clearInterval(id);
   }, [primaryTargetCategory]);
 
-  // Poll /fill and update fill level + status + add alert when >= 80%
-  useEffect(() => {
-    async function pollFill() {
-      try {
-        const data = await getFill();
-        const fill = typeof data.fill === "number" ? data.fill : 0;
-
-        setTrashCans((prev) =>
-          prev.map((can, index) => {
-            if (index !== 0) return can;
-
-            const prevFill = can.fillLevel;
-            const newStatus = calculateStatus(fill);
-            let events = can.events;
-
-            // Add a warning event only when crossing the 80% threshold
-            if (fill >= 80 && prevFill < 80) {
-              const now = new Date();
-              const timeStr = now.toLocaleTimeString("en-US", {
-                hour12: false,
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              });
-
-              const alertEvent: TrashCanData["events"][number] = {
-                timestamp: timeStr,
-                type: "alert",
-                message: `Fill level reached ${fill}%`,
-              };
-
-              events = [alertEvent, ...events].slice(0, 50);
-            }
-
-            return {
-              ...can,
-              fillLevel: fill,
-              status: newStatus,
-              events,
-            };
-          })
-        );
-      } catch (err) {
-        console.error("Error fetching fill level:", err);
-      }
-    }
-
-    pollFill();
-    const id = setInterval(pollFill, 5000); // every 5s
-    return () => clearInterval(id);
-  }, []);
-
   const updateTrashCan = (id: string, updates: Partial<TrashCanData>) => {
     setTrashCans((prev) =>
       prev.map((can) => {
         if (can.id !== id) return can;
         const updatedCan = { ...can, ...updates };
-        if (updates.fillLevel !== undefined) {
+        if (updates.categories) {
+          // Recalculate fill level if categories changed
+          updatedCan.fillLevel = calculateFillLevel(updatedCan.categories);
+          updatedCan.status = calculateStatus(updatedCan.fillLevel);
+        } else if (updates.fillLevel !== undefined) {
           updatedCan.status = calculateStatus(updates.fillLevel);
         }
         return updatedCan;
@@ -205,6 +223,8 @@ export function Dashboard() {
     setTrashCans((prev) =>
       prev.map((can) => {
         if (can.id !== id) return can;
+
+        processedLogs.current.clear();
 
         const emptiedCategories = Object.keys(can.categories).reduce(
           (acc, key) => {

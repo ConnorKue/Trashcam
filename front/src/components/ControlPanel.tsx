@@ -89,7 +89,7 @@ export function ControlPanel({
 
   const categoryLabels = {
     recyclable: "RECYCLABLE",
-    organic: "ORGANIC/COMPOST",
+    organic: "ORGANIC",
     general: "GENERAL TRASH",
   };
 
@@ -125,7 +125,7 @@ export function ControlPanel({
           <Select
             value={data.targetCategory}
             onValueChange={(value) =>
-              onUpdate({ targetCategory: value as "recyclable" | "organic/compost" | "general" })
+              onUpdate({ targetCategory: value as "recyclable" | "organic" | "general" })
             }
           >
             <SelectTrigger
