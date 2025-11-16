@@ -1,0 +1,2 @@
+[console_scripts]
+mjpeg-streamer = mjpeg_streamer.cli:main

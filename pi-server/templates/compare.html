@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEPTH FILTER COMPARISON</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #33ff33;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            min-height: 100vh;
+            cursor: none;
+        }
+
+        /* CRT effect */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #001100;
+            border: 2px solid #33ff33;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(51, 255, 51, 0.3);
+        }
+
+        .header h1 {
+            font-size: 42px;
+            letter-spacing: 4px;
+            text-shadow: 0 0 10px #33ff33, 0 0 20px #33ff33;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .stream-panel {
+            background: #001100;
+            border: 3px solid #33ff33;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(51, 255, 51, 0.2);
+        }
+
+        .stream-panel h2 {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #33ff33;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(51, 255, 51, 0.3);
+        }
+
+        .stream-panel.raw h2 {
+            color: #ff5555;
+            text-shadow: 0 0 10px #ff5555;
+        }
+
+        .stream-panel.raw {
+            border-color: #ff5555;
+            box-shadow: 0 0 20px rgba(255, 85, 85, 0.2);
+        }
+
+        .stream-panel.filtered h2 {
+            color: #55ff55;
+            text-shadow: 0 0 10px #55ff55;
+        }
+
+        .stream-panel.filtered {
+            border-color: #55ff55;
+            box-shadow: 0 0 20px rgba(85, 255, 85, 0.2);
+        }
+
+        .stream-panel img {
+            width: 100%;
+            height: auto;
+            border: 2px solid #33ff33;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(51, 255, 51, 0.3);
+        }
+
+        .stream-panel.raw img {
+            border-color: #ff5555;
+            box-shadow: 0 0 15px rgba(255, 85, 85, 0.3);
+        }
+
+        .stream-panel.filtered img {
+            border-color: #55ff55;
+            box-shadow: 0 0 15px rgba(85, 255, 85, 0.3);
+        }
+
+        .stream-description {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(51, 255, 51, 0.05);
+            border-radius: 5px;
+            border-left: 3px solid #33ff33;
+        }
+
+        .stream-panel.raw .stream-description {
+            background: rgba(255, 85, 85, 0.05);
+            border-left-color: #ff5555;
+        }
+
+        .stream-panel.filtered .stream-description {
+            background: rgba(85, 255, 85, 0.05);
+            border-left-color: #55ff55;
+        }
+
+        .stream-description h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .stream-description ul {
+            margin-left: 20px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .stats-panel {
+            background: #001100;
+            border: 3px solid #33ff33;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(51, 255, 51, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .stats-panel h2 {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #33ff33;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(51, 255, 51, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: rgba(51, 255, 51, 0.05);
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid rgba(51, 255, 51, 0.2);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 5px #33ff33;
+        }
+
+        .filter-settings {
+            background: #001100;
+            border: 3px solid #33ff33;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(51, 255, 51, 0.2);
+        }
+
+        .filter-settings h2 {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #33ff33;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(51, 255, 51, 0.3);
+        }
+
+        .filter-info {
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .filter-info strong {
+            color: #55ff55;
+            text-shadow: 0 0 5px #55ff55;
+        }
+
+        .filter-info ul {
+            margin-left: 20px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+        }
+
+        .back-link a {
+            color: #33ff33;
+            text-decoration: none;
+            font-size: 18px;
+            padding: 10px 20px;
+            border: 2px solid #33ff33;
+            border-radius: 5px;
+            display: inline-block;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(51, 255, 51, 0.3);
+        }
+
+        .back-link a:hover {
+            background: rgba(51, 255, 51, 0.1);
+            box-shadow: 0 0 20px rgba(51, 255, 51, 0.5);
+        }
+
+        .last-update {
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.5;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DEPTH FILTER COMPARISON</h1>
+        <p>Compare raw vs filtered depth data to verify noise reduction</p>
+    </div>
+
+    <div class="stats-panel">
+        <h2>CURRENT MEASUREMENTS</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-label">FILL LEVEL (FILTERED):</div>
+                <div class="stat-value" id="fillPercentage">--</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">CURRENT DEPTH:</div>
+                <div class="stat-value" id="currentDepth">---</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">EMPTY DEPTH:</div>
+                <div class="stat-value" id="emptyDepth">---</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">CALIBRATION STATUS:</div>
+                <div class="stat-value" id="calibrationStatus">LOADING...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="comparison-grid">
+        <div class="stream-panel raw">
+            <h2>RAW DEPTH (UNFILTERED)</h2>
+            <img id="rawStream" src="http://{{ server_ip }}:8080/depth_raw" alt="RAW DEPTH STREAM">
+            <div class="stream-description">
+                <h3>What you're seeing:</h3>
+                <ul>
+                    <li>Direct sensor data with NO post-processing</li>
+                    <li>Shows flickering and noise artifacts</li>
+                    <li>Depth values jump around frame-to-frame</li>
+                    <li>Missing data appears as holes (black spots)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="stream-panel filtered">
+            <h2>FILTERED DEPTH (PROCESSED)</h2>
+            <img id="filteredStream" src="http://{{ server_ip }}:8080/depth" alt="FILTERED DEPTH STREAM">
+            <div class="stream-description">
+                <h3>What you're seeing:</h3>
+                <ul>
+                    <li>Spatial filtering removes edge noise</li>
+                    <li>Temporal filtering smooths frame-to-frame changes</li>
+                    <li>Hole filling interpolates missing data</li>
+                    <li>Median buffer prevents sudden value jumps</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-settings">
+        <h2>ACTIVE FILTER CONFIGURATION</h2>
+        <div class="filter-info">
+            <p><strong>Spatial Filter:</strong> Edge-preserving smoothing to reduce noise while maintaining object boundaries</p>
+            <ul>
+                <li>Magnitude: 2 (controls smoothing strength)</li>
+                <li>Smooth Alpha: 0.5 (weight for current vs previous)</li>
+                <li>Smooth Delta: 20mm (depth difference threshold)</li>
+            </ul>
+
+            <p><strong>Temporal Filter:</strong> Smooths depth changes over time to reduce flickering</p>
+            <ul>
+                <li>Alpha: 0.15 (lower = more smoothing, less responsive)</li>
+                <li>Delta: 20mm (depth change threshold)</li>
+            </ul>
+
+            <p><strong>Hole Filling:</strong> Fills missing depth data using surrounding valid pixels</p>
+            <ul>
+                <li>Mode: Farthest from around (conservative approach)</li>
+            </ul>
+
+            <p><strong>Median Temporal Buffer:</strong> Median of last 10 depth readings</p>
+            <ul>
+                <li>Prevents sudden spikes or drops in measurements</li>
+                <li>Provides stable fill percentage readings</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="back-link">
+        <a href="/">← BACK TO MAIN INTERFACE</a>
+    </div>
+
+    <div class="last-update" id="lastUpdate">AWAITING DATA...</div>
+
+    <script>
+        const SERVER_IP = "{{ server_ip }}";
+        const STREAM_URL = 'http://' + SERVER_IP + ':8080';
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateStats(data);
+                }
+            } catch (error) {
+                console.error('Error fetching status:', error);
+            }
+        }
+
+        function updateStats(data) {
+            const fillPercentage = document.getElementById('fillPercentage');
+            const currentDepth = document.getElementById('currentDepth');
+            const emptyDepth = document.getElementById('emptyDepth');
+            const calibrationStatus = document.getElementById('calibrationStatus');
+            const lastUpdate = document.getElementById('lastUpdate');
+
+            if (data.empty_depth === null) {
+                fillPercentage.textContent = '--';
+                currentDepth.textContent = '---';
+                emptyDepth.textContent = '---';
+                calibrationStatus.textContent = 'NOT CALIBRATED';
+                calibrationStatus.style.color = '#ff3333';
+            } else {
+                fillPercentage.textContent = (data.fill_percentage || 0).toFixed(1) + '%';
+                currentDepth.textContent = Math.round(data.current_depth || 0) + 'mm';
+                emptyDepth.textContent = Math.round(data.empty_depth || 0) + 'mm';
+                calibrationStatus.textContent = 'CALIBRATED';
+                calibrationStatus.style.color = '#33ff33';
+            }
+
+            const now = new Date();
+            lastUpdate.textContent = `LAST UPDATE: ${now.toLocaleTimeString()}`;
+        }
+
+        // Start polling for status
+        fetchStatus();
+        setInterval(fetchStatus, 1000);
+
+        // MJPEG streams are continuous - no need to refresh src
+        // Just let the streams play continuously
+    </script>
+</body>
+</html>

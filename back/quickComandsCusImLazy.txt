@@ -1,9 +1,0 @@
-pip install -r  requirements.txt
-
-
-Backend:
-cd backend
-
-chmod +x start.sh
-pip install -r requirements.txt
-./start.sh
