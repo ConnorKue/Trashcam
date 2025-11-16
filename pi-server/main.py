@@ -10,17 +10,25 @@ import time
 import threading
 import socket
 from socket import AF_INET, SOCK_DGRAM
+import logging
+
+# Suppress noisy aiohttp connection errors (normal when clients disconnect)
+logging.getLogger('aiohttp.server').setLevel(logging.CRITICAL)
 
 CALIBRATION_FILE = "depth_calibration.json"
 CALIBRATION_SAMPLES = 30  # Number of frames to average for calibration
 
+# Depth range parameters
+MIN_VALID_DEPTH = 150  # Minimum depth in mm that camera can reliably measure (below this = too close/invalid)
+MAX_FILL_DEPTH_THRESHOLD = 0.95  # When calculated fill >= this ratio, consider it 100% full
+
 # Post-processing parameters - tuned for maximum stability
 TEMPORAL_FILTER_ALPHA = 0.08  # Lower = more smoothing, more stable (0.05-0.15 for high stability)
 SPATIAL_FILTER_ENABLED = True
-SPATIAL_FILTER_MAGNITUDE = 5  # Increased strength of spatial filtering (2-5 range)
-SPATIAL_FILTER_SMOOTH_ALPHA = 0.7  # Higher = more aggressive smoothing
-SPATIAL_FILTER_SMOOTH_DELTA = 50  # Larger threshold = more smoothing across depth changes
-HOLE_FILLING_MODE = 2  # 2 = nearest from around (more conservative than farthest)
+SPATIAL_FILTER_MAGNITUDE = 2  # Reduced from 5 to 2 for less aggressive filtering
+SPATIAL_FILTER_SMOOTH_ALPHA = 0.5  # Reduced from 0.7 to 0.5 for less smoothing
+SPATIAL_FILTER_SMOOTH_DELTA = 20  # Reduced from 50 to 20 for less smoothing across depth changes
+HOLE_FILLING_MODE = 0  # Disabled (0 = off) to prevent vertical line artifacts when zooming in
 DEPTH_BUFFER_SIZE = 20  # Increased from 10 to 20 for more stable median
 DEPTH_CHANGE_THRESHOLD = 5  # Ignore changes smaller than 5mm to prevent jitter
 
@@ -297,42 +305,53 @@ def create_region_mask(img_height, img_width, bbox_params):
 
 def create_cropped_depth_view(colorized_depth, bbox_params):
     """
-    Create a cropped view centered on the bounding box midpoint.
-    Shows as much of the depth map as possible while maintaining square aspect ratio.
+    Create a horizontally cropped view centered on the bounding box.
+    Keeps the full vertical resolution (480 pixels) and crops only horizontally
+    to maintain aspect ratio without warping. Returns 640x480 image.
     """
-    img_height, img_width = colorized_depth.shape[:2]
+    img_height, img_width = colorized_depth.shape[:2]  # Should be 480x640
     
-    # Get center point of the bounding box
+    # Get center point and dimensions of the bounding box
     center_x = int(bbox_params["center_x"] * img_width)
-    center_y = int(bbox_params["center_y"] * img_height)
+    bbox_width = int(bbox_params["width"] * img_width)
     
-    # Determine the maximum square crop size that fits in the image
-    # Use the smaller dimension to ensure we don't crop outside the image
-    max_crop_size = min(
-        center_x * 2,  # Can extend this far left and right
-        center_y * 2,  # Can extend this far up and down
-        (img_width - center_x) * 2,  # Space to the right
-        (img_height - center_y) * 2,  # Space to the bottom
-        img_width,  # Total width
-        img_height  # Total height
-    )
+    # Add margin around the bounding box (40% extra space on each side)
+    margin_factor = 1.4
+    required_width = int(bbox_width * margin_factor)
     
-    # Calculate crop coordinates centered on the bounding box
-    half_size = max_crop_size // 2
-    x1 = max(0, center_x - half_size)
-    y1 = max(0, center_y - half_size)
-    x2 = min(img_width, center_x + half_size)
-    y2 = min(img_height, center_y + half_size)
+    # We want to crop to 640 pixels wide, centered on the bounding box
+    # This maintains the original aspect ratio (640x480) with no warping
+    crop_width = 640  # Keep original width for no warping
     
-    # Crop the image
+    # Calculate horizontal crop coordinates centered on the bounding box
+    x1 = center_x - crop_width // 2
+    x2 = center_x + crop_width // 2
+    
+    # Adjust if we go out of bounds
+    if x1 < 0:
+        x1 = 0
+        x2 = crop_width
+    if x2 > img_width:
+        x2 = img_width
+        x1 = img_width - crop_width
+    
+    # Ensure bounds are valid
+    x1 = max(0, x1)
+    x2 = min(img_width, x2)
+    
+    # Keep full vertical resolution (no vertical cropping)
+    y1 = 0
+    y2 = img_height  # Full 480 pixels
+    
+    # Crop the image (horizontal crop only)
     cropped = colorized_depth[y1:y2, x1:x2]
     
-    # Resize to square for consistent display
-    if cropped.size > 0:
-        cropped_resized = cv2.resize(cropped, (300, 300), interpolation=cv2.INTER_AREA)
-        return cropped_resized
+    # If the crop is smaller than 640 (edge case), resize to 640x480
+    if cropped.shape[1] < 640:
+        return cv2.resize(cropped, (640, 480), interpolation=cv2.INTER_LINEAR)
     
-    return np.zeros((300, 300, 3), dtype=np.uint8)
+    # Return the cropped view at original resolution (no warping)
+    return cropped
 
 
 def add_inset_to_image(main_image, inset_image, position='bottom-right', margin=10):
@@ -628,7 +647,7 @@ if __name__ == "__main__":
   colorStream = Stream("color", size=(640, 480), quality=85, fps=30)
   depthStream = Stream("depth", size=(640, 480), quality=85, fps=30)
   depthRawStream = Stream("depth_raw", size=(640, 480), quality=85, fps=30)
-  depthCroppedStream = Stream("depth_cropped", size=(300, 300), quality=85, fps=30)
+  depthCroppedStream = Stream("depth_cropped", size=(640, 480), quality=85, fps=30)
   server.add_stream(colorStream)
   server.add_stream(depthStream)
   server.add_stream(depthRawStream)
@@ -647,66 +666,121 @@ if __name__ == "__main__":
   
   try:
     while True:
-      # Wait for frames
-      frames = pipe.wait_for_frames()
-      color_frame = frames.get_color_frame()
-      depth_frame = frames.get_depth_frame()
-      
-      if color_frame:
-        # Convert to numpy array (already in BGR format)
-        color_image = np.asanyarray(color_frame.get_data())
+      try:
+        # Wait for frames
+        frames = pipe.wait_for_frames()
+        color_frame = frames.get_color_frame()
+        depth_frame = frames.get_depth_frame()
         
-        # Push frame to color stream
-        colorStream.set_frame(color_image)
-      
-      # Process depth and create visualization
-      if depth_frame:
-        # Keep original for comparison
-        depth_frame_raw = depth_frame
-        
-        # Apply post-processing filters
-        depth_frame_filtered = apply_depth_filters(depth_frame)
-        
-        # Create colorized versions for both
-        colorized_depth_raw = np.asanyarray(colorizer.colorize(depth_frame_raw).get_data())
-        colorized_depth_filtered = np.asanyarray(colorizer.colorize(depth_frame_filtered).get_data())
-        
-        # Use filtered depth for main stream
-        # Use filtered depth for main stream
-        colorized_depth = colorized_depth_filtered.copy()
-        
-        # Get depth data from filtered frame
-        depth_image = np.asanyarray(depth_frame_filtered.get_data())
-        
-        # Get image dimensions
-        height, width = depth_image.shape
-        
-        # Draw bounding shape on visualizations
-        draw_bounding_shape(colorized_depth, current_state["bounding_box"])
-        draw_bounding_shape(colorized_depth_raw, current_state["bounding_box"])
-        
-        # Calculate fill percentage if calibrated
-        fill_percentage = None
-        current_depth = None
-        
-        # Use the current state's empty_depth which gets updated by calibration
-        if current_state["empty_depth"] is not None:
-          # Create mask for the bounding box region
-          mask = create_region_mask(height, width, current_state["bounding_box"])
+        if color_frame:
+          # Convert to numpy array (already in BGR format)
+          color_image = np.asanyarray(color_frame.get_data())
           
-          # Apply mask to get only depths within the bounding box
-          masked_depths = depth_image[mask > 0]
-          valid_depths = masked_depths[masked_depths > 0]
+          # Push frame to color stream
+          colorStream.set_frame(color_image)
+        
+        # Process depth and create visualization
+        if depth_frame:
+          # Keep original for comparison
+          depth_frame_raw = depth_frame
           
-          if len(valid_depths) > 0:
-            raw_depth = np.median(valid_depths)
+          # Apply post-processing filters
+          depth_frame_filtered = apply_depth_filters(depth_frame)
+          
+          # Create colorized versions for both
+          colorized_depth_raw = np.asanyarray(colorizer.colorize(depth_frame_raw).get_data())
+          colorized_depth_filtered = np.asanyarray(colorizer.colorize(depth_frame_filtered).get_data())
+          
+          # Convert RGB to BGR for OpenCV/MJPEG
+          colorized_depth_raw = cv2.cvtColor(colorized_depth_raw, cv2.COLOR_RGB2BGR)
+          colorized_depth_filtered = cv2.cvtColor(colorized_depth_filtered, cv2.COLOR_RGB2BGR)
+          
+          # Use filtered depth for main stream
+          colorized_depth = colorized_depth_filtered.copy()
+          
+          # Get depth data from filtered frame
+          depth_image = np.asanyarray(depth_frame_filtered.get_data())
+          
+          # Get image dimensions
+          height, width = depth_image.shape
+          
+          # Create a clean copy for the cropped view BEFORE drawing anything
+          colorized_depth_clean = colorized_depth.copy()
+          
+          # Draw bounding shape on the main visualizations only
+          draw_bounding_shape(colorized_depth, current_state["bounding_box"])
+          draw_bounding_shape(colorized_depth_raw, current_state["bounding_box"])
+          
+          # Calculate fill percentage if calibrated
+          fill_percentage = None
+          current_depth = None
+          depth_status = None
+          
+          # Use the current state's empty_depth which gets updated by calibration
+          if current_state["empty_depth"] is not None:
+            # Create mask for the bounding box region
+            mask = create_region_mask(height, width, current_state["bounding_box"])
             
-            # Apply temporal median filter to stabilize readings
-            current_depth = apply_median_temporal_filter(raw_depth)
+            # Apply mask to get only depths within the bounding box
+            masked_depths = depth_image[mask > 0]
+            total_pixels = len(masked_depths)
             
-            fill_depth = current_state["empty_depth"] - current_depth
-            fill_percentage = (fill_depth / current_state["empty_depth"]) * 100
-            fill_percentage = max(0, min(100, fill_percentage))
+            # Count dark circles (0 values - these are pixels too close for the camera)
+            zero_depths = masked_depths[masked_depths == 0]
+            zero_pixel_count = len(zero_depths)
+            
+            # Get valid (non-zero) depths
+            valid_depths = masked_depths[masked_depths > 0]
+            valid_pixel_count = len(valid_depths)
+            
+            # Calculate percentage of zero pixels (dark circles)
+            zero_pixel_ratio = zero_pixel_count / total_pixels if total_pixels > 0 else 0
+            
+            # If we have dark circles, weight them as 0mm (very close)
+            if zero_pixel_ratio > 0.3:  # More than 30% dark circles means very close
+              # Treat as full - too many pixels are beyond minimum range (too close)
+              fill_percentage = 100.0
+              current_depth = 0  # Dark circles represent 0mm (too close to measure)
+              depth_status = "FULL (too close)"
+              raw_depth = 0
+            elif valid_pixel_count > 0:
+              # We have valid readings - use them
+              # If there are some dark circles, include them as 0mm in the calculation
+              if zero_pixel_count > 0:
+                # Combine valid depths with zeros (weighted as 0mm)
+                all_depths = np.concatenate([valid_depths, np.zeros(zero_pixel_count)])
+                raw_depth = np.median(all_depths)
+              else:
+                raw_depth = np.median(valid_depths)
+              
+              # Apply temporal median filter to stabilize readings
+              current_depth = apply_median_temporal_filter(raw_depth)
+              
+              # Check if depth is below minimum valid range (too close or invalid reading)
+              # In this case, treat as "full" or very close to full
+              if current_depth < MIN_VALID_DEPTH:
+                # Depth too close - either full or object blocking sensor
+                fill_percentage = 100.0
+                current_depth = MIN_VALID_DEPTH  # Clamp to minimum for display
+                depth_status = "FULL (at min range)"
+              else:
+                # Normal depth calculation
+                fill_depth = current_state["empty_depth"] - current_depth
+                fill_percentage = (fill_depth / current_state["empty_depth"]) * 100
+                
+                # If fill percentage exceeds threshold, cap at 100%
+                if fill_percentage >= (MAX_FILL_DEPTH_THRESHOLD * 100):
+                  fill_percentage = 100.0
+                  depth_status = "FULL"
+                else:
+                  fill_percentage = max(0, min(100, fill_percentage))
+                  depth_status = None
+            else:
+              # No valid depths at all - assume full
+              fill_percentage = 100.0
+              current_depth = MIN_VALID_DEPTH
+              depth_status = "FULL (no valid depth)"
+              raw_depth = MIN_VALID_DEPTH
             
             # Update global state
             current_state["current_depth"] = current_depth
@@ -715,11 +789,41 @@ if __name__ == "__main__":
             # Send depth data to subscribed clients
             send_depth()
             
-            # Add title and percentage text to main stream (filtered)
-            title_text = "Trash Can `Fill Level`"
+            # Prepare text variables for main stream (will be drawn after creating cropped view)
+            title_text = "Trash Can Fill Level"
             percentage_text = f"{fill_percentage:.1f}% Full"
+            if depth_status:
+              percentage_text += f" - {depth_status}"
             depth_text = f"Depth: {current_depth:.0f}mm / {current_state['empty_depth']:.0f}mm"
             
+            # Add raw data to raw stream (for comparison page)
+            # Apply same min depth logic to raw display
+            if raw_depth < MIN_VALID_DEPTH:
+              raw_fill_percentage = 100.0
+              raw_depth_display = MIN_VALID_DEPTH
+            else:
+              raw_fill_depth = current_state["empty_depth"] - raw_depth
+              raw_fill_percentage = (raw_fill_depth / current_state["empty_depth"]) * 100
+              if raw_fill_percentage >= (MAX_FILL_DEPTH_THRESHOLD * 100):
+                raw_fill_percentage = 100.0
+              else:
+                raw_fill_percentage = max(0, min(100, raw_fill_percentage))
+              raw_depth_display = raw_depth
+            
+            cv2.rectangle(colorized_depth_raw, (10, 10), (400, 100), (0, 0, 0), -1)
+            cv2.putText(colorized_depth_raw, "Raw (Unfiltered)", (20, 35), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            cv2.putText(colorized_depth_raw, f"{raw_fill_percentage:.1f}% Full", (20, 65), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            cv2.putText(colorized_depth_raw, f"Depth: {raw_depth_display:.0f}mm / {current_state['empty_depth']:.0f}mm", (20, 90), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+            
+            # Create cropped view from CLEAN image (no bounding box, no text)
+            cropped_depth = create_cropped_depth_view(colorized_depth_clean, current_state["bounding_box"])
+            # Now draw bounding box on the cropped view only
+            draw_bounding_shape(cropped_depth, current_state["bounding_box"])
+            
+            # NOW add text to the main depth view (this won't affect cropped_depth)
             # Background rectangles for text
             cv2.rectangle(colorized_depth, (10, 10), (400, 100), (0, 0, 0), -1)
             
@@ -730,39 +834,35 @@ if __name__ == "__main__":
                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             cv2.putText(colorized_depth, depth_text, (20, 90), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+          else:
+            # No calibration message
+            # Create cropped view from CLEAN image (no text, no bounding box on main view yet)
+            cropped_depth = create_cropped_depth_view(colorized_depth_clean, current_state["bounding_box"])
+            # Draw bounding box on the cropped view only
+            draw_bounding_shape(cropped_depth, current_state["bounding_box"])
             
-            # Add raw data to raw stream (for comparison page)
-            raw_fill_depth = current_state["empty_depth"] - raw_depth
-            raw_fill_percentage = (raw_fill_depth / current_state["empty_depth"]) * 100
-            raw_fill_percentage = max(0, min(100, raw_fill_percentage))
+            # Add NOT CALIBRATED text to main views only
+            cv2.rectangle(colorized_depth, (10, 10), (350, 60), (0, 0, 0), -1)
+            cv2.putText(colorized_depth, "NOT CALIBRATED", (20, 35), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            cv2.putText(colorized_depth, "Use web interface to calibrate", (20, 55), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.4, (200, 200, 200), 1)
             
-            cv2.rectangle(colorized_depth_raw, (10, 10), (400, 100), (0, 0, 0), -1)
-            cv2.putText(colorized_depth_raw, "Raw (Unfiltered)", (20, 35), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-            cv2.putText(colorized_depth_raw, f"{raw_fill_percentage:.1f}% Full", (20, 65), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-            cv2.putText(colorized_depth_raw, f"Depth: {raw_depth:.0f}mm / {current_state['empty_depth']:.0f}mm", (20, 90), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
-        else:
-          # No calibration message
-          cv2.rectangle(colorized_depth, (10, 10), (350, 60), (0, 0, 0), -1)
-          cv2.putText(colorized_depth, "NOT CALIBRATED", (20, 35), 
-                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-          cv2.putText(colorized_depth, "Use web interface to calibrate", (20, 55), 
-                     cv2.FONT_HERSHEY_SIMPLEX, 0.4, (200, 200, 200), 1)
+            # Same for raw
+            cv2.rectangle(colorized_depth_raw, (10, 10), (350, 60), (0, 0, 0), -1)
+            cv2.putText(colorized_depth_raw, "NOT CALIBRATED", (20, 35), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
           
-          # Same for raw
-          cv2.rectangle(colorized_depth_raw, (10, 10), (350, 60), (0, 0, 0), -1)
-          cv2.putText(colorized_depth_raw, "NOT CALIBRATED", (20, 35), 
-                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        
-        # Create cropped view showing only the bounding box region
-        cropped_depth = create_cropped_depth_view(colorized_depth_filtered, current_state["bounding_box"])
-        
-        # Push depth visualizations to streams (no inset)
-        depthStream.set_frame(colorized_depth)
-        depthRawStream.set_frame(colorized_depth_raw)
-        depthCroppedStream.set_frame(cropped_depth)
+          # Push depth visualizations to streams
+          depthStream.set_frame(colorized_depth)
+          depthRawStream.set_frame(colorized_depth_raw)
+          depthCroppedStream.set_frame(cropped_depth)
+      
+      except Exception as e:
+        import traceback
+        print(f"Error processing frame: {e}")
+        traceback.print_exc()
+        continue
               
   except KeyboardInterrupt:
     print("\nStopping stream...")

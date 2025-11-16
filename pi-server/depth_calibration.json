@@ -1,11 +1,11 @@
 {
-  "empty_depth_mm": 184.0,
-  "calibration_date": "2025-11-16 04:59:14",
+  "empty_depth_mm": 383.0,
+  "calibration_date": "2025-11-16 10:15:16",
   "samples_taken": 30,
   "bounding_box": {
     "shape": "circle",
-    "center_x": 0.5,
-    "center_y": 0.45,
+    "center_x": 0.68,
+    "center_y": 0.8,
     "width": 0.1,
     "height": 0.1,
     "rotation": 120.0,
