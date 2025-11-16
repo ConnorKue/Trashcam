@@ -125,7 +125,7 @@ export function Dashboard() {
             return {
               ...event,
               type: newType,
-              message,
+
             };
           }
           return event;

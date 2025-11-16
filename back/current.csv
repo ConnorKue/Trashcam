@@ -1,0 +1,49 @@
+timestamp,location,item,classification
+1763301074.5074165,"(0, 1)",person,compost
+1763301082.11814,"(406, 35)",bottle,recycling
+1763301082.390837,"(400, 26)",soda can,recycling
+1763301082.6287076,"(311, 159)",battery,trash
+1763301090.0442038,"(275, 440)",cell phone,trash
+1763301090.0455437,"(394, 0)",person,compost
+1763301102.5311706,"(387, 130)",paper bag,trash
+1763301102.533221,"(470, 0)",person,compost
+1763301104.0974982,"(392, 141)",bottle,recycling
+1763301104.597764,"(391, 142)",soda can,recycling
+1763301112.5856233,"(0, 33)",person,compost
+1763301130.2216704,"(223, 441)",laptop,trash
+1763301158.1819646,"(146, 224)",bottle,recycling
+1763301160.6737115,"(323, 138)",cup,recycling
+1763301207.5118854,"(0, 93)",person,compost
+1763301220.9673069,"(0, 17)",person,compost
+1763301229.7026682,"(237, 120)",bottle,recycling
+1763301235.686081,"(417, 355)",person,compost
+1763301237.3763819,"(391, 161)",cup,recycling
+1763301245.876805,"(0, 121)",person,compost
+1763301258.932613,"(2, 10)",person,compost
+1763301271.2254195,"(210, 100)",cell phone,trash
+1763301307.890707,"(275, 0)",cup,recycling
+1763301318.6507275,"(263, 12)",paper bag,trash
+1763301319.3687963,"(266, 0)",bottle,recycling
+1763301332.9504333,"(237, 0)",battery,trash
+1763301342.6404467,"(232, 84)",bottle,recycling
+1763301342.6416903,"(232, 83)",cup,recycling
+1763301343.6275048,"(232, 83)",soda can,recycling
+1763301352.7645326,"(320, 0)",bottle,recycling
+1763301360.1361067,"(227, 0)",cup,recycling
+1763301362.7858021,"(417, 23)",bottle,recycling
+1763301387.9094906,"(246, 148)",cell phone,trash
+1763301398.051514,"(294, 267)",cell phone,trash
+1763301404.892683,"(352, 112)",bottle,recycling
+1763301405.6380737,"(313, 400)",laptop,trash
+1763301412.4284341,"(53, 0)",person,compost
+1763301412.9706407,"(327, 134)",cell phone,trash
+1763301414.997274,"(440, 137)",bottle,recycling
+1763301415.275261,"(440, 137)",battery,trash
+1763301464.0730777,"(264, 52)",cup,recycling
+1763301489.3703358,"(269, 52)",paper plate,recycling
+1763301492.9630127,"(274, 31)",battery,trash
+1763301493.1981666,"(282, 1)",bottle,recycling
+1763301494.1625326,"(261, 0)",person,compost
+1763301584.2995267,"(235, 120)",battery,trash
+1763301594.2234857,"(202, 73)",laptop,trash
+1763301600.6793678,"(176, 21)",battery,trash
