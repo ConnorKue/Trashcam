@@ -18,15 +18,17 @@ model = YOLO("yolov8s-world.pt")
 
 # Define the open-vocab classes you care about
 WORLD_CLASSES = [
-    # recycling
-    "bottle", "cup", "paper plate", "pizza box", "soda can",
-    # trash
-    "paper napkin", "paper towel", "wrapper", "chip bag", "straw", "tissue",
-    "cloth", "pen", "pencil", "battery", "earbuds", "duct tape",
-    "paper bag", "laptop", "cell phone", "coat", "capri sun",
-    # compost
-    "pizza", "chocolate", "person",
-    "Sandwiches"
+    # # recycling
+    # "bottle", "cup", "paper plate", "pizza box", "soda can",
+    # # trash
+    # "paper napkin", "paper towel", "wrapper", "chip bag", "straw", "tissue",
+    # "cloth", "pen", "pencil", "battery", "earbuds", "duct tape",
+    # "paper bag", "laptop", "cell phone", "coat", "capri sun",
+    # # compost
+    # "pizza", "chocolate",
+    # "Sandwiches"
+    "water bottle", "soda can", "plate"
+
 ]
 
 # Tell YOLO-World to detect only these things
@@ -34,7 +36,8 @@ model.set_classes(WORLD_CLASSES)
 
 load_dotenv()
 
-VIDEO_URL = "http://129.161.144.78:8080/color"
+VIDEO_URL = os.getenv("PI_URL")
+# VIDEO_URL = "http://129.161.144.78:8080/color"
 # VIDEO_URL = "http://"+str(os.getenv("PI_USER"))+":"+str(os.getenv("PI_PASSWORD"))+"@"+str(os.getenv("PI_IP"))+":"+str(os.getenv("PI_PORT"))+"/?action=stream.mjpeg"
 
 # --------------------------
@@ -42,35 +45,37 @@ VIDEO_URL = "http://129.161.144.78:8080/color"
 # item (prompt text) -> classification
 # --------------------------
 CATEGORY_MAP = {
-    # recycling
-    "bottle": "recycling",
-    "cup": "recycling",
-    "paper plate": "recycling",
-    "pizza box": "recycling",
-    "soda can": "recycling",
-    # trash
-    "paper napkin": "trash",
-    "paper towel": "trash",
-    "wrapper": "trash",
-    "chip bag": "trash",
-    "straw": "trash",
-    "tissue": "trash",
-    "cloth": "trash",
-    "pen": "trash",
-    "pencil": "trash",
-    "battery": "trash",
-    "earbuds": "trash",
-    "duct tape": "trash",
-    "paper bag": "trash",
-    "laptop": "trash",
-    "cell phone": "trash",
-    "coat": "trash",
-    "capri sun": "trash",
-    # compost
-    "pizza": "compost",
-    "chocolate": "compost",
-    "person": "compost",
-    "Sandwiches": "compost",
+    # # recycling
+    # "bottle": "recycling",
+    # "cup": "recycling",
+    # "paper plate": "recycling",
+    # "pizza box": "recycling",
+    # "soda can": "recycling",
+    # # trash
+    # "paper napkin": "trash",
+    # "paper towel": "trash",
+    # "wrapper": "trash",
+    # "chip bag": "trash",
+    # "straw": "trash",
+    # "tissue": "trash",
+    # "cloth": "trash",
+    # "pen": "trash",
+    # "pencil": "trash",
+    # "battery": "trash",
+    # "earbuds": "trash",
+    # "duct tape": "trash",
+    # "paper bag": "trash",
+    # "laptop": "trash",
+    # "cell phone": "trash",
+    # "coat": "trash",
+    # "capri sun": "trash",
+    # # compost
+    # "pizza": "compost",
+    # "chocolate": "compost",
+    # "Sandwiches": "compost"
+    "water bottle":"compost",
+    "soda can":"recycling",
+    "plate":"trash"
 }
 
 currentItems = []
@@ -229,7 +234,7 @@ def main():
     while True:
         ret, frame = cap.read()
 
-        frame = frame+20
+        # frame = frame+20
         frame[frame > 255] = 255
 
         if not ret:
