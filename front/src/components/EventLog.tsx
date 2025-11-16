@@ -9,21 +9,17 @@ interface Event {
   message: string;
 }
 
-interface BackendLog {
-  timestamp: string;
-  item: string;
-  class: string;
-}
-
 interface EventLogProps {
   events: Event[];
   onRemoveEvent?: (index: number) => void;
+  onClearAll?: () => void;
   scrollHeight?: number;
 }
 
 export function EventLog({
   events,
   onRemoveEvent,
+  onClearAll,
   scrollHeight = 800,
 }: EventLogProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -61,15 +57,28 @@ export function EventLog({
   return (
     <div className="bg-[#1a1a3e] border-4 border-[#50d070] p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)]">
       <div className="mb-4">
-        <h2
-          className="text-[#50d070] tracking-wider"
-          style={{
-            fontFamily: "monospace",
-            textShadow: "2px 2px 0px rgba(80,208,112,0.3)",
-          }}
-        >
-          === EVENT LOG ===
-        </h2>
+        <div className="flex justify-between items-center">
+          <h2
+            className="text-[#50d070] tracking-wider"
+            style={{
+              fontFamily: "monospace",
+              textShadow: "2px 2px 0px rgba(80,208,112,0.3)",
+            }}
+          >
+            === EVENT LOG ===
+          </h2>
+          {onClearAll && events.length > 0 && (
+            <button
+              onClick={onClearAll}
+              className="flex items-center gap-2 px-3 py-1 text-xs text-[#ff4466] hover:text-[#ff6688] border border-[#ff4466] hover:border-[#ff6688] bg-[#0f0f23] hover:bg-[#1a1a2e] transition-all duration-200 tracking-wide"
+              style={{ fontFamily: "monospace" }}
+              title="Clear all events"
+            >
+              <Recycle className="w-3 h-3" />
+              CLEAR ALL
+            </button>
+          )}
+        </div>
         <p
           className="text-xs text-[#50d070]/70 tracking-wide"
           style={{ fontFamily: "monospace" }}
