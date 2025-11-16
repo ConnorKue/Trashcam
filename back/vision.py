@@ -18,15 +18,15 @@ model = YOLO("yolov8s-world.pt")
 
 # Define the open-vocab classes you care about
 WORLD_CLASSES = [
-#recycling
-"bottle", "cup", "paper plate", "pizza box", "soda can",
-#trash
-"paper napkin", "paper towel", "wrapper", "chip bag", "straw", "tissue", 
-"cloth", "pen", "pencil", "battery", "earbuds", "duct tape", 
-"paper bag", "laptop", "cell phone", "coat", "capri sun",
-#compost
-"pizza", "chocolate", "person", "meat", "Orange", "Apple", 
-"Sandwiches"
+    # recycling
+    "bottle", "cup", "paper plate", "pizza box", "soda can",
+    # trash
+    "paper napkin", "paper towel", "wrapper", "chip bag", "straw", "tissue",
+    "cloth", "pen", "pencil", "battery", "earbuds", "duct tape",
+    "paper bag", "laptop", "cell phone", "coat", "capri sun",
+    # compost
+    "pizza", "chocolate", "person",
+    "Sandwiches"
 ]
 
 # Tell YOLO-World to detect only these things
@@ -40,45 +40,45 @@ VIDEO_URL = "http://129.161.144.78:8080/color"
 # --------------------------
 # Category mapping
 # item (prompt text) -> classification
-# tweak these strings however you want
 # --------------------------
 CATEGORY_MAP = {
-#recycling
-"bottle": "recycling",
-"cup": "recycling",
-"paper plate": "recycling",
-"pizza box": "recycling",
-"soda can": "recycling",
-#trash
-"paper napkin":"trash",
-"paper towel": "trash",
-"wrapper": "trash",
-"chip bag": "trash",
-"straw": "trash",
-"tissue": "trash",
-"cloth": "trash",
-"pen": "trash",
-"pencil": "trash",
-"battery": "trash",
-"earbuds": "trash",
-"duct tape": "trash",
-"paper bag": "trash",
-"laptop": "trash",
-"cell phone": "trash",
-"coat": "trash",
-"capri sun": "trash",
-#compost
-"pizza": "compost",
-"chocolate": "compost",
-"person": "compost",
-"meat": "compost",
-"Orange": "compost",
-"Apple": "compost",
-"Sandwiches": "compost",
-
+    # recycling
+    "bottle": "recycling",
+    "cup": "recycling",
+    "paper plate": "recycling",
+    "pizza box": "recycling",
+    "soda can": "recycling",
+    # trash
+    "paper napkin": "trash",
+    "paper towel": "trash",
+    "wrapper": "trash",
+    "chip bag": "trash",
+    "straw": "trash",
+    "tissue": "trash",
+    "cloth": "trash",
+    "pen": "trash",
+    "pencil": "trash",
+    "battery": "trash",
+    "earbuds": "trash",
+    "duct tape": "trash",
+    "paper bag": "trash",
+    "laptop": "trash",
+    "cell phone": "trash",
+    "coat": "trash",
+    "capri sun": "trash",
+    # compost
+    "pizza": "compost",
+    "chocolate": "compost",
+    "person": "compost",
+    "Sandwiches": "compost",
 }
 
 currentItems = []
+
+# per-item state: when/where we last logged that item
+last_seen = {}              # item -> {"time": float, "x": int, "y": int}
+TIME_THRESH = 5.0           # seconds between logs for same item
+DIST_THRESH = 30.0          # pixels between logs for same item
 
 
 def classify_into_3(item: str) -> str:
@@ -88,10 +88,22 @@ def classify_into_3(item: str) -> str:
 def addToCan(timestamp, location, item, classification):
     currentItems.append({
         "timestamp": timestamp,
-        "location": f"{location}",  # "(x, y)"
+        "location": f"{location}",
         "item": item,
         "classification": classification
     })
+
+    with open('current.csv', 'a', newline='') as csvfile:
+        writer = csv.DictWriter(
+            csvfile,
+            fieldnames=["timestamp", "location", "item", "classification"]
+        )
+
+        # If file is empty, write header
+        if csvfile.tell() == 0:
+            writer.writeheader()
+
+        writer.writerow(currentItems[-1])
 
 
 def parseLocation(loc_str: str):
@@ -101,19 +113,6 @@ def parseLocation(loc_str: str):
     x = int(parts[0].strip())
     y = int(parts[1].strip())
     return [x, y]
-
-
-def updateCan():
-    with open('current.csv', 'w', newline='') as csvfile:
-        writer = csv.DictWriter(
-            csvfile,
-            fieldnames=["timestamp", "location", "item", "classification"]
-        )
-        writer.writeheader()
-
-        # if you ever want to filter/dedup, do it here before writing
-        for entry in currentItems:
-            writer.writerow(entry)
 
 
 def process_frame(frame):
@@ -127,11 +126,31 @@ def process_frame(frame):
 
         # With YOLO-World + set_classes, names are exactly your WORLD_CLASSES
         item = model.names[cls]  # or results.names[cls]
-
         category = classify_into_3(item)
 
-        # Log to can
-        addToCan(time.time(), (int(x1), int(y1)), item, category)
+        now = time.time()
+        cx, cy = int(x1), int(y1)   # use top-left as reference point
+
+        info = last_seen.get(item)
+        should_log = False
+
+        if info is None:
+            # first time we see this item label this session
+            should_log = True
+        else:
+            prev_time = info["time"]
+            px, py = info["x"], info["y"]
+
+            dt = now - prev_time
+            dist = math.sqrt((cx - px) ** 2 + (cy - py) ** 2)
+
+            # only log again if it's both far in time and space
+            if dt > TIME_THRESH and dist > DIST_THRESH:
+                should_log = True
+
+        if should_log:
+            addToCan(now, (cx, cy), item, category)
+            last_seen[item] = {"time": now, "x": cx, "y": cy}
 
         # Draw box + labels
         cv2.rectangle(
@@ -166,6 +185,9 @@ def process_frame(frame):
 
 
 def main():
+    # clear current.csv
+    open('current.csv', 'w').write("timestamp,location,item,classification\n")
+
     cap = cv2.VideoCapture(VIDEO_URL, cv2.CAP_FFMPEG)
 
     if not cap.isOpened():
@@ -185,9 +207,6 @@ def main():
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):
             break
-
-    # dump whatever we saw this session
-    updateCan()
 
     cap.release()
     cv2.destroyAllWindows()
