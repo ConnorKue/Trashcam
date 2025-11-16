@@ -19,12 +19,10 @@ export interface TrashCanData {
   lastEmptied: string; // ISO timestamp
   status: "normal" | "warning" | "critical";
   location: string;
-  targetCategory: "recyclable" | "organic" | "plastic" | "paper" | "general";
+  targetCategory: "recyclable" | "organic/compost" | "general";
   categories: {
     recyclable: number;
     organic: number;
-    plastic: number;
-    paper: number;
     general: number;
   };
   events: Array<{
@@ -44,11 +42,9 @@ const initialTrashCanData: TrashCanData = {
   location: "Building A",
   targetCategory: "recyclable",
   categories: {
-    recyclable: 8,
-    organic: 3,
-    plastic: 12,
-    paper: 15,
-    general: 7,
+    recyclable: 20,
+    organic: 15,
+    general: 10,
   },
   events: [],
 };
