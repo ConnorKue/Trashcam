@@ -9,6 +9,7 @@ interface TrashCanCardProps {
   data: TrashCanData;
   onUpdate: (updates: Partial<TrashCanData>) => void;
   emptyTrash: (id: string) => void;
+  clearEvents: (id: string) => void;
   currentTime: Date;
 }
 
@@ -36,7 +37,7 @@ const getTimeAgo = (timestamp: string, currentTime: Date): string => {
   }
 };
 
-export function TrashCanCard({ data, onUpdate, emptyTrash, currentTime }: TrashCanCardProps) {
+export function TrashCanCard({ data, onUpdate, emptyTrash, clearEvents, currentTime }: TrashCanCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "critical":
@@ -149,6 +150,7 @@ export function TrashCanCard({ data, onUpdate, emptyTrash, currentTime }: TrashC
       data={data}
       onUpdate={onUpdate}
       emptyTrash={() => emptyTrash(data.id)}
+      clearEvents={() => clearEvents(data.id)}
       currentTime={currentTime}
       />
 

@@ -25,13 +25,15 @@ interface ControlPanelProps {
   data: TrashCanData;
   onUpdate: (updates: Partial<TrashCanData>) => void;
   currentTime: Date;
-  emptyTrash: () => void; // ⬅️ added
+  emptyTrash: () => void;
+  clearEvents: () => void;
 }
 
 export function ControlPanel({
   data,
   onUpdate,
   emptyTrash,
+  clearEvents,
 }: ControlPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [editedData, setEditedData] = useState(data);
@@ -94,10 +96,8 @@ export function ControlPanel({
     } catch (err) {
       console.error("Failed to clear backend data:", err);
     }
-    emptyTrash(); // update local UI + add "Trash can emptied" event
-
-    // ⬇️ force full page refresh after emptying
-    window.location.reload();
+    emptyTrash();
+    clearEvents();
   };
 
   return (
