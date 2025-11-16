@@ -77,8 +77,8 @@ currentItems = []
 
 # per-item state: when/where we last logged that item
 last_seen = {}              # item -> {"time": float, "x": int, "y": int}
-TIME_THRESH = 5.0           # seconds between logs for same item
-DIST_THRESH = 30.0          # pixels between logs for same item
+TIME_THRESH = 10.0           # seconds between logs for same item
+DIST_THRESH = 50.0          # pixels between logs for same item
 
 
 def classify_into_3(item: str) -> str:
