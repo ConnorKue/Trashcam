@@ -716,7 +716,7 @@ if __name__ == "__main__":
             send_depth()
             
             # Add title and percentage text to main stream (filtered)
-            title_text = "Trash Can Fill Level"
+            title_text = "Trash Can `Fill Level`"
             percentage_text = f"{fill_percentage:.1f}% Full"
             depth_text = f"Depth: {current_depth:.0f}mm / {current_state['empty_depth']:.0f}mm"
             
