@@ -205,7 +205,7 @@ export function Dashboard() {
               });
             });
 
-            const newWeight = can.weight + Math.min(25, changes * 0.5);
+            const newWeight = can.weight + Math.min(25, changes * (0.03+Math.random()*0.05));
             const newStatus = calculateStatus(fill);
             const existingEvents = [...can.events];
 
@@ -235,7 +235,7 @@ export function Dashboard() {
               ...can,
               categories: updatedCategories,
               fillLevel: fill,
-              weight: parseFloat(newWeight.toFixed(1)),
+              weight: parseFloat(newWeight.toFixed(2)),
               status: newStatus,
               events: finalEvents,
             };

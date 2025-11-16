@@ -49,10 +49,10 @@ export function ControlPanel({
       (sum, count) => sum + count,
       0
     );
-    const calculatedWeight = Math.min(25, total * 0.5);
+    const calculatedWeight = Math.min(25, total * (0.03+Math.random()*0.05));
     const updates = {
       ...editedData,
-      weight: parseFloat(calculatedWeight.toFixed(1)),
+      weight: parseFloat(calculatedWeight.toFixed(2)),
     };
     onUpdate(updates);
     setIsOpen(false);
