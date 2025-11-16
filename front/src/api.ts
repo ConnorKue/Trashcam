@@ -43,7 +43,7 @@ export async function getFill() {
   // Fill router: prefix="/fill", @router.get("/")
   // => GET /fill/
   const res = await request("/fill/");
-  return res.fillPercent.toFixed(2);   
+  return res.fillPercent.toFixed(2);
 }
 
 export async function clearCurrentData() {

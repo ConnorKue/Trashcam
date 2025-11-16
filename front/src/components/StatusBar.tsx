@@ -1,10 +1,11 @@
-import { Activity } from "lucide-react";
+import { Activity, Wifi, WifiOff } from "lucide-react";
 
 interface StatusBarProps {
   totalCans: number;
   criticalCans: number;
   warningCans: number;
   currentTime: Date;
+  isOnline: boolean;
 }
 
 export function StatusBar({
@@ -12,6 +13,7 @@ export function StatusBar({
   criticalCans,
   warningCans,
   currentTime,
+  isOnline,
 }: StatusBarProps) {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
@@ -24,13 +26,33 @@ export function StatusBar({
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-4 mt-4">
+      {/* Online/Offline Status */}
+      <div className={`border-2 px-4 py-2 flex items-center gap-2 ${
+        isOnline
+          ? "bg-[#1a1a3e] border-[#50d070]"
+          : "bg-[#3e1a1a] border-[#ff4466] animate-pulse"
+      }`}>
+        {isOnline ? (
+          <Wifi className="w-4 h-4 text-[#50d070]" />
+        ) : (
+          <WifiOff className="w-4 h-4 text-[#ff4466]" />
+        )}
+        <span
+          className={`tracking-wider ${isOnline ? "text-[#50d070]" : "text-[#ff4466]"}`}
+          style={{ fontFamily: "monospace" }}
+        >
+          {isOnline ? "ONLINE" : "OFFLINE"}
+        </span>
+      </div>
+
+      {/* Total Cans */}
       <div className="bg-[#1a1a3e] border-2 border-[#50d070] px-4 py-2 flex items-center gap-2">
         <Activity className="w-4 h-4 text-[#50d070]" />
         <span
           className="text-[#50d070] tracking-wider"
           style={{ fontFamily: "monospace" }}
         >
-          ONLINE: {totalCans}
+          TOTAL: {totalCans}
         </span>
       </div>
 

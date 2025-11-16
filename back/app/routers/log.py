@@ -54,7 +54,7 @@ def get_logs():
 
             # --- class/category label ---
             cls = (
-                row.get("class")
+                row.get("classification")
                 or row.get("category")
                 or row.get("coarse_type")
                 or row.get("type")
@@ -65,7 +65,7 @@ def get_logs():
                 {
                     "timestamp": ts,
                     "item": item,
-                    "class": cls,
+                    "classification": cls,
                 }
             )
 
