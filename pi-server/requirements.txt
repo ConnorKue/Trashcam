@@ -1,0 +1,7 @@
+pyrealsense2
+numpy
+opencv-python
+mjpeg-streamer
+python-dotenv
+flask
+requests

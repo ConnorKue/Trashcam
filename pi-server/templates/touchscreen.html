@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1024, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TRASHCAM TOUCHSCREEN</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+
+
+    
+    body {
+      width: 1024px;
+      height: 600px;
+      overflow: hidden;
+      background: #000;
+      color: #33ff33;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      html, body, * {
+        cursor: none !important;
+      }
+    }
+
+    /* CRT effect */
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 1;
+    }
+
+    /* Modern UI theme - Hyper modern white and blue */
+    body.modern {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #1a1a2e;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body.modern::before {
+      opacity: 0;
+    }
+
+    body.modern .header {
+      background: rgba(255, 255, 255, 0.95);
+      border-bottom: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    body.modern .header h1 {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    body.modern .header .status {
+      color: #667eea;
+      font-weight: 500;
+    }
+
+    body.modern .fill-display {
+      background: rgba(255, 255, 255, 0.95);
+      border: none;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    body.modern .fill-percentage {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      font-weight: 800;
+    }
+
+    body.modern .fill-label {
+      color: #667eea;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 18px;
+    }
+
+    body.modern .depth-info {
+      color: #764ba2;
+      font-weight: 500;
+    }
+
+    body.modern .status-bar {
+      background: rgba(255, 255, 255, 0.95);
+      border: none;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      color: #1a1a2e;
+      backdrop-filter: blur(10px);
+    }
+
+    body.modern .status-bar .info-row {
+      border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+    }
+
+    body.modern .status-bar .info-row span:first-child {
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    body.modern .depth-preview {
+      background: rgba(255, 255, 255, 0.95);
+      border: none;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    body.modern .depth-preview h3 {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    body.modern .depth-preview img {
+      border: none;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+    }
+
+    body.modern .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+      text-shadow: none;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    body.modern .btn:active {
+      background: linear-gradient(135deg, #5568d3 0%, #65398b 100%);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      transform: translateY(2px);
+    }
+
+    body.modern .btn.calibrating {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      box-shadow: 0 8px 24px rgba(79, 172, 254, 0.5);
+      animation: pulse-modern 2s infinite;
+    }
+
+    @keyframes pulse-modern {
+      0%, 100% {
+        box-shadow: 0 8px 24px rgba(79, 172, 254, 0.5);
+      }
+      50% {
+        box-shadow: 0 12px 32px rgba(79, 172, 254, 0.7);
+      }
+    }
+
+    body.modern .last-update {
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+    }
+
+    body.modern .not-calibrated {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+    }
+
+    body.modern .warning-message {
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid #f5576c;
+      color: #f5576c;
+      box-shadow: 0 8px 24px rgba(245, 87, 108, 0.2);
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+
+    .header {
+      background: #001100;
+      border-bottom: 2px solid #33ff33;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(51, 255, 51, 0.3);
+    }
+
+    .header h1 {
+      font-size: 36px;
+      letter-spacing: 4px;
+      text-shadow: 0 0 10px #33ff33, 0 0 20px #33ff33;
+      margin-bottom: 5px;
+    }
+
+    .header .status {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .left-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .fill-display {
+      background: #001100;
+      border: 3px solid #33ff33;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(51, 255, 51, 0.2), inset 0 0 20px rgba(51, 255, 51, 0.1);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .fill-percentage {
+      font-size: 140px;
+      font-weight: bold;
+      text-shadow: 0 0 20px #33ff33, 0 0 40px #33ff33;
+      margin: 10px 0;
+      line-height: 1;
+    }
+
+    .fill-label {
+      font-size: 24px;
+      opacity: 0.9;
+      margin-bottom: 5px;
+    }
+
+    .depth-info {
+      font-size: 20px;
+      opacity: 0.7;
+      margin-top: 10px;
+    }
+
+    .status-bar {
+      background: #001100;
+      border: 2px solid #33ff33;
+      border-radius: 8px;
+      padding: 15px;
+      font-size: 16px;
+      box-shadow: 0 0 15px rgba(51, 255, 51, 0.2);
+    }
+
+    .status-bar .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 6px 0;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(51, 255, 51, 0.2);
+    }
+
+    .status-bar .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .right-panel {
+      width: 280px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .depth-preview {
+      background: #001100;
+      border: 3px solid #33ff33;
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: 0 0 20px rgba(51, 255, 51, 0.2);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .depth-preview h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 10px #33ff33;
+      text-align: center;
+    }
+
+    .depth-preview .image-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+    }
+
+    .depth-preview img {
+      width: 100%;
+      height: 100%;
+      border: 2px solid #33ff33;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(51, 255, 51, 0.3);
+      object-fit: cover;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .btn {
+      background: #001100;
+      border: 3px solid #33ff33;
+      color: #33ff33;
+      font-family: 'Courier New', monospace;
+      font-size: 22px;
+      font-weight: bold;
+      padding: 25px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      box-shadow: 0 0 15px rgba(51, 255, 51, 0.2);
+      text-shadow: 0 0 10px #33ff33;
+      touch-action: manipulation;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+      box-shadow: 0 0 25px rgba(51, 255, 51, 0.5), inset 0 0 20px rgba(51, 255, 51, 0.3);
+      background: #002200;
+    }
+
+    .btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn.calibrating {
+      background: #002200;
+      box-shadow: 0 0 25px rgba(51, 255, 51, 0.5);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 15px rgba(51, 255, 51, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 30px rgba(51, 255, 51, 0.6);
+      }
+    }
+
+    .not-calibrated {
+      color: #ff3333;
+      text-shadow: 0 0 10px #ff3333, 0 0 20px #ff3333;
+    }
+
+    .warning-message {
+      background: #110000;
+      border: 2px solid #ff3333;
+      color: #ff3333;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 18px;
+      box-shadow: 0 0 15px rgba(255, 51, 51, 0.3);
+      animation: pulse-red 2s infinite;
+    }
+
+    @keyframes pulse-red {
+      0%, 100% {
+        box-shadow: 0 0 15px rgba(255, 51, 51, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 30px rgba(255, 51, 51, 0.6);
+      }
+    }
+
+    .last-update {
+      text-align: center;
+      font-size: 12px;
+      opacity: 0.5;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="fadeCanvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; display: none;"></canvas>
+  
+  <div class="header">
+    <h1>TRASHCAM TERMINAL</h1>
+    <div class="status">SYSTEM ACTIVE - MONITORING</div>
+  </div>
+
+  <div class="main-content">
+    <div class="left-panel">
+      <div class="fill-display" id="fillDisplay">
+        <div class="fill-label">FILL LEVEL</div>
+        <div class="fill-percentage" id="fillPercentage">--</div>
+        <div class="depth-info" id="depthInfo">INITIALIZING...</div>
+      </div>
+
+      <div class="status-bar">
+        <div class="info-row">
+          <span>CALIBRATION:</span>
+          <span id="calibrationStatus">LOADING...</span>
+        </div>
+        <div class="info-row">
+          <span>EMPTY DEPTH:</span>
+          <span id="emptyDepth">---</span>
+        </div>
+        <div class="info-row">
+          <span>CURRENT DEPTH:</span>
+          <span id="currentDepth">---</span>
+        </div>
+        <div class="info-row">
+          <span>LAST CALIBRATED:</span>
+          <span id="calibrationDate">NEVER</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="controls">
+        <button class="btn" id="calibrateBtn" onclick="startCalibration()">
+          CALIBRATE
+        </button>
+      </div>
+      
+      <div class="depth-preview">
+        <h3>DEPTH ANALYSIS</h3>
+        <div class="image-container">
+          <img id="depthStream" src="http://{{ server_ip }}:8080/depth_cropped" alt="DEPTH STREAM">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="last-update" id="lastUpdate">AWAITING DATA...</div>
+
+  <script>
+    // Cache DOM elements
+    const elements = {
+      fillPercentage: document.getElementById('fillPercentage'),
+      depthInfo: document.getElementById('depthInfo'),
+      calibrationStatus: document.getElementById('calibrationStatus'),
+      emptyDepth: document.getElementById('emptyDepth'),
+      currentDepth: document.getElementById('currentDepth'),
+      calibrationDate: document.getElementById('calibrationDate'),
+      lastUpdate: document.getElementById('lastUpdate'),
+      calibrateBtn: document.getElementById('calibrateBtn'),
+      depthStream: document.getElementById('depthStream'),
+      fadeCanvas: document.getElementById('fadeCanvas')
+    };
+
+    const ctx = elements.fadeCanvas.getContext('2d');
+    let isCalibrating = false;
+    let smoothedFill = null;
+    const SMOOTHING_FACTOR = 0.7;
+    const STREAM_URL = `http://{{ server_ip }}:8080`;
+
+    async function fetchStatus() {
+      try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        
+        if (data.success) {
+          updateDisplay(data);
+        }
+      } catch (error) {
+        console.error('Error fetching status:', error);
+      }
+    }
+
+    function updateDisplay(data) {
+      if (data.empty_depth === null) {
+        elements.fillPercentage.textContent = '--';
+        elements.fillPercentage.className = 'fill-percentage not-calibrated';
+        elements.depthInfo.innerHTML = '<div class="warning-message">NOT CALIBRATED<br>TAP CALIBRATE BUTTON</div>';
+        elements.calibrationStatus.textContent = 'NOT CALIBRATED';
+        elements.calibrationStatus.style.color = '#ff3333';
+        elements.emptyDepth.textContent = '---';
+        elements.currentDepth.textContent = '---';
+      } else {
+        // Smooth the fill percentage
+        const rawFill = data.fill_percentage || 0;
+        smoothedFill = smoothedFill === null ? rawFill : smoothedFill * SMOOTHING_FACTOR + rawFill * (1 - SMOOTHING_FACTOR);
+
+        elements.fillPercentage.textContent = Math.round(smoothedFill) + '%';
+        elements.fillPercentage.className = 'fill-percentage';
+        
+        const currentDepthMm = data.current_depth || 0;
+        const emptyDepthMm = data.empty_depth || 0;
+        const trashDepthMm = Math.max(0, emptyDepthMm - currentDepthMm);
+        elements.depthInfo.textContent = `${Math.round(trashDepthMm)}mm / ${Math.round(emptyDepthMm)}mm`;
+        
+        elements.calibrationStatus.textContent = 'CALIBRATED';
+        elements.calibrationStatus.style.color = '#33ff33';
+        elements.emptyDepth.textContent = Math.round(emptyDepthMm) + ' mm';
+        elements.currentDepth.textContent = Math.round(currentDepthMm) + ' mm';
+      }
+
+      elements.calibrationDate.textContent = data.calibration_date || 'NEVER';
+      elements.lastUpdate.textContent = `LAST UPDATE: ${new Date().toLocaleTimeString()}`;
+
+      // Update calibrating state
+      if (data.calibrating !== isCalibrating) {
+        isCalibrating = data.calibrating;
+        updateCalibrationUI();
+      }
+    }
+
+    async function startCalibration() {
+      if (isCalibrating) return;
+
+      isCalibrating = true;
+      updateCalibrationUI();
+
+      try {
+        const response = await fetch('/api/calibrate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+          console.error('Calibration failed:', data.error);
+        }
+      } catch (error) {
+        console.error('Calibration error:', error);
+      } finally {
+        isCalibrating = false;
+        updateCalibrationUI();
+        fetchStatus();
+      }
+    }
+
+    function updateCalibrationUI() {
+      if (isCalibrating) {
+        elements.calibrateBtn.textContent = 'CALIBRATING...';
+        elements.calibrateBtn.classList.add('calibrating');
+        elements.calibrateBtn.disabled = true;
+      } else {
+        elements.calibrateBtn.textContent = 'CALIBRATE';
+        elements.calibrateBtn.classList.remove('calibrating');
+        elements.calibrateBtn.disabled = false;
+      }
+    }
+
+    // Theme switching with fade
+    function toggleThemeWithFade() {
+      const canvas = elements.fadeCanvas;
+      
+      // Only set size once if not already set
+      if (canvas.width !== 1024) {
+        canvas.width = 1024;
+        canvas.height = 600;
+      }
+      
+      canvas.style.display = 'block';
+      
+      // Determine fade color based on NEXT theme (opposite of current)
+      const isCurrentlyModern = document.body.classList.contains('modern');
+      const fadeColor = isCurrentlyModern ? '0, 0, 0' : '255, 255, 255'; // Black when going to retro, white when going to modern
+      
+      let opacity = 0;
+      const fadeInDuration = 200;
+      const fadeOutDuration = 200;
+      let startTime = performance.now();
+      let fadeOutStartTime = null;
+      
+      function fadeIn(currentTime) {
+        opacity = Math.min(1, (currentTime - startTime) / fadeInDuration);
+        
+        // Clear and draw
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = `rgba(${fadeColor}, ${opacity})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        if (opacity < 1) {
+          requestAnimationFrame(fadeIn);
+        } else {
+          // Switch theme
+          document.body.classList.toggle('modern');
+          const isModern = document.body.classList.contains('modern');
+          localStorage.setItem('trashcam-theme', isModern ? 'modern' : 'retro');
+          
+          // Start fade out
+          requestAnimationFrame(fadeOut);
+        }
+      }
+      
+      function fadeOut(currentTime) {
+        if (fadeOutStartTime === null) {
+          fadeOutStartTime = currentTime;
+        }
+        
+        opacity = Math.max(0, 1 - (currentTime - fadeOutStartTime) / fadeOutDuration);
+        
+        // Clear and draw
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = `rgba(${fadeColor}, ${opacity})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        if (opacity > 0) {
+          requestAnimationFrame(fadeOut);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          canvas.style.display = 'none';
+        }
+      }
+      
+      requestAnimationFrame(fadeIn);
+    }
+
+    // Gesture detection
+    let startY = 0, startX = 0, startTime = 0;
+
+    function handleStart(x, y) {
+      startX = x;
+      startY = y;
+      startTime = Date.now();
+    }
+
+    function handleEnd(x, y) {
+      const deltaY = y - startY;
+      const deltaX = Math.abs(x - startX);
+      const deltaTime = Date.now() - startTime;
+      
+      if (startY < 100 && deltaY > 100 && deltaY > deltaX && deltaTime < 800) {
+        toggleThemeWithFade();
+      }
+    }
+
+    // Event listeners
+    document.addEventListener('touchstart', e => handleStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    document.addEventListener('touchend', e => handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY), { passive: true });
+    document.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+    document.addEventListener('mouseup', e => handleEnd(e.clientX, e.clientY));
+    
+    window.addEventListener('beforeunload', e => {
+      e.preventDefault();
+      e.returnValue = '';
+    });
+
+    // Load saved theme
+    if (localStorage.getItem('trashcam-theme') === 'modern') {
+      document.body.classList.add('modern');
+    }
+
+    // Start polling and stream refresh
+    fetchStatus();
+    setInterval(fetchStatus, 1000);
+    setInterval(() => {
+      elements.depthStream.src = `${STREAM_URL}/depth_cropped?t=${Date.now()}`;
+    }, 100);
+  </script>
+</body>
+</html>
