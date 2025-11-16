@@ -1,13 +1,17 @@
-timestamp,TopCornerOfBoundary,item,class
-2025-11-15T17:22:28.445933,"279,141",tin can,metal
-2025-11-15T17:22:28.448885,"365,168",paper bag,paper
-2025-11-15T17:22:28.449884,"366,168",coffee cup with sleeve,liquid
-2025-11-15T17:22:28.615664,"280,140",cup lid,plastic
-2025-11-15T17:22:28.445933,"279,141",blueberry,fruit
-2025-11-15T17:22:28.448885,"365,168",pizza,food
-2025-11-15T17:22:28.449884,"366,168",bannana peel, compost
-2025-11-15T17:22:28.449884,"366,168",trying new, compost
-2025-11-15T17:22:28.449884,"366,168",again new, compost
-2025-11-15T17:22:28.449884,"366,168",bgain new, compost
-2025-11-15T17:22:28.449884,"366,168",cgain new, compost
-2025-11-15T17:22:28.449884,"366,168",dgain new, compost
+timestamp,location,item,classification
+1763267103.835186,"(0, 0)",person,compost
+1763267233.752924,"(149, 0)",person,compost
+1763267244.0315406,"(1, 0)",person,compost
+1763267277.115982,"(186, 0)",laptop,trash
+1763267277.1198487,"(187, 0)",battery,trash
+1763267278.930779,"(197, 81)",paper bag,trash
+1763267287.21363,"(110, 143)",laptop,trash
+1763267373.8838794,"(110, 143)",battery,trash
+1763267394.922553,"(110, 143)",paper bag,trash
+1763267668.5915706,"(46, 203)",laptop,trash
+1763268034.3753548,"(254, 0)",person,compost
+1763268037.6110065,"(0, 99)",laptop,trash
+1763268044.4141386,"(1, 0)",person,compost
+1763268054.7136204,"(78, 0)",person,compost
+1763268055.2044604,"(0, 43)",laptop,trash
+1763268065.4672902,"(0, 104)",laptop,trash
