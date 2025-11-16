@@ -285,3 +285,14 @@
 2025-11-15T17:32:08.406937 - cardboard box -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
 2025-11-15T17:32:08.837152 - cardboard box -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
 2025-11-15T17:32:08.893099 - cardboard box -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
+2025-11-15T17:39:27.952939 - cardboard box -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
+2025-11-15T17:42:25.457016 - cardboard box -> paper -> recycling | co2_item_kg=0.0400, co2_saved_kg=0.0200
+2025-11-15T17:50:49.031473 - soft drink cup -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:50:59.130727 - soda bottle -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:51:36.609987 - coffee cup with sleeve -> liquid -> trash | co2_item_kg=0.0200, co2_saved_kg=0.0000
+2025-11-15T17:51:43.097431 - shopping bag -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:51:45.986828 - shopping bag -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:51:54.367593 - shopping bag -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:51:55.025002 - shopping bag -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:51:58.475659 - shopping bag -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560
+2025-11-15T17:51:58.881509 - shopping bag -> plastic -> recycling | co2_item_kg=0.0800, co2_saved_kg=0.0560

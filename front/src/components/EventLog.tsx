@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScrollArea } from "./ui/scroll-area";
-import { Clock, Trash2, AlertTriangle, Package } from "lucide-react";
+import { Package, AlertTriangle, Trash2, Recycle } from "lucide-react";
+import { getLogs } from "../api";
 
 interface Event {
   timestamp: string;
@@ -8,57 +9,88 @@ interface Event {
   message: string;
 }
 
-interface EventLogProps {
-  events: Event[];
-  scrollHeight?: number;
-  onRemoveEvent?: (index: number) => void;
+interface BackendLog {
+  timestamp: string;
+  item: string;
+  class: string;
 }
 
-export function EventLog({ events, scrollHeight = 800, onRemoveEvent }: EventLogProps) {
+interface EventLogProps {
+  events: Event[];
+  onRemoveEvent?: (index: number) => void;
+  scrollHeight?: number;
+}
+
+// Simple classification function for 3-category system
+const classifyItem = (cls: string): "recyclable" | "organic" | "general" => {
+  const c = cls.toLowerCase();
+  if (c.includes("plastic") || c.includes("paper") || c.includes("cardboard") ||
+      c.includes("metal") || c.includes("glass") || c.includes("can") ||
+      c.includes("aluminum")) {
+    return "recyclable";
+  } else if (c.includes("organic") || c.includes("compost") || c.includes("food") ||
+             c.includes("biodegradable") || c.includes("fruit") || c.includes("vegetable")) {
+    return "organic";
+  } else {
+    return "general";
+  }
+};
+
+export function EventLog({
+  events,
+  onRemoveEvent,
+  scrollHeight = 800,
+}: EventLogProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const getEventIcon = (type: string) => {
+  const getEventIcon = (type: Event["type"]) => {
     switch (type) {
       case "deposit":
         return Package;
+      case "contamination":
+        return AlertTriangle;
       case "empty":
         return Trash2;
       case "alert":
         return AlertTriangle;
-      case "contamination":
-        return AlertTriangle;
       default:
-        return Clock;
+        return Package;
     }
   };
 
-  const getEventColor = (type: string) => {
+  const getEventColor = (type: Event["type"]) => {
     switch (type) {
       case "deposit":
         return "#50d0e0";
-      case "empty":
-        return "#60d060";
-      case "alert":
-        return "#ffaa44";
       case "contamination":
         return "#ff4466";
-      default:
+      case "empty":
         return "#50d070";
-    }
-  };
-
-  const handleRemoveEvent = (index: number) => {
-    if (onRemoveEvent) {
-      onRemoveEvent(index);
+      case "alert":
+        return "#ffaa44";
+      default:
+        return "#50d0e0";
     }
   };
 
   return (
     <div className="bg-[#1a1a3e] border-4 border-[#50d070] p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)]">
       <div className="mb-4">
-        <h2 className="text-[#50d070] tracking-wider" style={{ fontFamily: 'monospace', textShadow: '2px 2px 0px rgba(80,208,112,0.3)' }}>
+        <h2
+          className="text-[#50d070] tracking-wider"
+          style={{
+            fontFamily: "monospace",
+            textShadow: "2px 2px 0px rgba(80,208,112,0.3)",
+          }}
+        >
           === EVENT LOG ===
         </h2>
+        <p
+          className="text-xs text-[#50d070]/70 tracking-wide"
+          style={{ fontFamily: "monospace" }}
+        >
+          LIVE DETECTION EVENTS
+        </p>
       </div>
 
       <ScrollArea className="pr-4" style={{ height: scrollHeight }}>
@@ -67,32 +99,46 @@ export function EventLog({ events, scrollHeight = 800, onRemoveEvent }: EventLog
             const Icon = getEventIcon(event.type);
             const color = getEventColor(event.type);
             const isHovered = hoveredIndex === index;
+
             return (
               <div
                 key={index}
-                className="bg-[#0f0f23] border-2 p-3 cursor-pointer transition-all duration-200 ease-in-out"
+                className="bg-[#0f0f23] border-2 p-3 cursor-pointer transition-all duration-200 ease-in-out group"
                 style={{
                   borderColor: isHovered ? color : `${color}66`,
-                  boxShadow: isHovered ? `0 0 8px ${color}80` : 'none'
+                  boxShadow: isHovered ? `0 0 8px ${color}80` : "none",
                 }}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
-                onClick={() => handleRemoveEvent(index)}
               >
                 <div className="flex items-start gap-2">
-                  <Icon className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color }} />
+                  <Icon
+                    className="w-4 h-4 mt-0.5 flex-shrink-0"
+                    style={{ color }}
+                  />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex justify-between items-start">
                       <span
-                        className="tracking-wider"
-                        style={{ fontFamily: 'monospace', color }}
+                        className="tracking-wider text-xs"
+                        style={{ fontFamily: "monospace", color }}
                       >
                         {event.timestamp}
                       </span>
+                      {onRemoveEvent && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveEvent(index);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 text-[#ff4466] hover:text-[#ff6688] transition-opacity"
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
                     <p
-                      className="tracking-wide break-words"
-                      style={{ fontFamily: 'monospace', color: `${color}cc` }}
+                      className="tracking-wide break-words mt-1"
+                      style={{ fontFamily: "monospace", color: `${color}cc` }}
                     >
                       {event.message}
                     </p>
@@ -101,6 +147,22 @@ export function EventLog({ events, scrollHeight = 800, onRemoveEvent }: EventLog
               </div>
             );
           })}
+
+          {events.length === 0 && (
+            <div className="text-center py-8">
+              <Package className="w-12 h-12 text-[#50d070]/80 mx-auto mb-2" />
+              <p
+                className="text-[#50d070]/80 text-sm tracking-wide"
+                style={{ fontFamily: "monospace" }}>
+                No events detected yet.
+              </p>
+              <p
+                className="text-[#50d070]/80 text-xs tracking-wide mt-1"
+                style={{ fontFamily: "monospace" }}>
+                Items will appear here when detected.
+              </p>
+            </div>
+          )}
         </div>
       </ScrollArea>
     </div>

@@ -2,7 +2,7 @@ import cv2
 import time
 import os
 from datetime import datetime
-from collections import defaultdict, deque
+from collections import defaultdict, deque, Counter
 import json
 import numpy as np
 import csv
@@ -19,8 +19,11 @@ load_dotenv()
 # =========================
 # Config
 # =========================
-CONF_THRES = 0.20
-IOU_THRES = 0.30  # For NMS
+CONF_THRES = 0.30       # a bit stricter for accuracy
+IOU_THRES = 0.45        # standard NMS threshold
+
+IMG_SIZE = 640          # higher resolution → better detections
+MIN_BOX_AREA = 35 * 35  # ignore tiny flicker boxes
 
 LOG_FILE = "detections.log"
 UNKNOWN_LOG_FILE = "unknown_labels.log"
@@ -28,15 +31,29 @@ STATS_FILE = "detection_stats.json"
 CSV_FILE = "current.csv"
 
 DEBUG_LOG_UNKNOWN = True
-ENABLE_TRACKING = False  # Disabled for YOLO-World compatibility
-FRAME_SKIP = 0  # Process every N frames (0 = process all)
-USE_FP16 = False  # Disabled for YOLO-World compatibility
+FRAME_SKIP = 0          # Process every N frames (0 = all)
+USE_FP16 = False        # YOLO-World prefers FP32
 STATS_SAVE_INTERVAL = 30  # Save stats every N seconds
 
-# Spatial dedupe: group top-left corners into buckets of this size (pixels)
-POS_MARGIN_PX = 45   # 45px region in x and y
+# Restrict detection to the bin region in the frame
+USE_ROI = True
+ROI_TOP_FRAC = 0.35     # tweak these based on where the bin is in view
+ROI_BOTTOM_FRAC = 1.0
+ROI_LEFT_FRAC = 0.2
+ROI_RIGHT_FRAC = 0.8
 
-# Map from detected prompt/label -> coarse type (keys kept lowercase)
+# Spatial dedupe buckets (used when we finally log a stable track)
+POS_MARGIN_PX = 45  # bucket width/height in pixels
+
+# Simple multi-frame tracking
+USE_SIMPLE_TRACKER = True
+MIN_STABLE_FRAMES = 3        # require N frames before we log an item
+TRACK_IOU_THRESH = 0.4       # IoU to match detections to tracks
+MAX_TRACK_MISSES = 15        # frames until a lost track is dropped
+
+# =========================
+# Label → coarse type mapping
+# =========================
 PROMPT_TO_COARSE = {
     # ------------ PLASTIC (recycling) ------------
     "plastic bottle": "plastic",
@@ -229,7 +246,7 @@ class DetectionStats:
         self.last_save_time = time.time()
         
     def update(self, detections_data):
-        """Update stats with new frame data"""
+        """Update stats with new (stable) detection data"""
         self.frame_count += 1
         
         for det in detections_data:
@@ -297,8 +314,8 @@ class DetectionStats:
         print(f"Frames Processed: {summary['frames_processed']}")
         print(f"Avg FPS: {summary['avg_fps']:.1f}")
         print(f"Avg Processing Time: {summary['avg_processing_time_ms']:.1f}ms")
-        print(f"Total Detections: {summary['total_detections']}")
-        print(f"Unique Items: {summary['unique_items']}")
+        print(f"Total Detections (logged objects): {summary['total_detections']}")
+        print(f"Unique Items (track-based): {summary['unique_items']}")
         print(f"Avg Confidence: {summary['avg_confidence']:.3f}")
         print(f"Recycling Rate: {summary['recycling_rate_percent']:.1f}%")
         print(f"CO₂ Saved: {summary['total_co2_saved_kg']:.3f}kg")
@@ -308,20 +325,24 @@ class DetectionStats:
             print(f"  {item_type}: {count}")
         print("="*50 + "\n")
 
+# =========================
+# Logging helpers
+# =========================
+
 # Track unknown labels we've already noted (for debug log only)
 SEEN_UNKNOWN = set()
 
-# Global set of event keys we've already logged (for CSV + detections.log)
+# Spatial dedupe for *logged* events (per run)
 SEEN_EVENTS = set()  # e.g. "plastic:2:5", "unknown:4:7"
 
-def estimate_co2(coarse_category: str, bin_type: str):
+def estimate_co2(coarse_category, bin_type):
     profile = COARSE_CO2.get(coarse_category, COARSE_CO2["other"])
     co2_item = profile["co2_item_kg"]
     frac = profile.get("saving_fraction", 0.0)
     co2_saved = co2_item * frac if bin_type == "recycling" else 0.0
     return coarse_category, co2_item, co2_saved
 
-def classify_item(label: str):
+def classify_item(label):
     label_l = label.lower().strip()
     coarse = PROMPT_TO_COARSE.get(label_l)
     
@@ -347,7 +368,7 @@ def classify_item(label: str):
     
     return coarse, bin_type
 
-def log_unknown_label(label: str):
+def log_unknown_label(label):
     if not DEBUG_LOG_UNKNOWN:
         return
     key = label.lower()
@@ -361,7 +382,7 @@ def log_unknown_label(label: str):
     except Exception as e:
         print(f"Failed to write unknown label log: {e}")
 
-def log_new_item(label: str, coarse: str, bin_type: str, co2_item_kg: float, co2_saved_kg: float):
+def log_new_item(label, coarse, bin_type, co2_item_kg, co2_saved_kg):
     """Log every NEW detection event to detections.log"""
     line = (
         f"{datetime.now().isoformat()} - {label} -> {coarse} -> {bin_type} | "
@@ -384,7 +405,7 @@ def init_csv():
     except Exception as e:
         print(f"Failed to init CSV file: {e}")
 
-def log_csv_detection(x1: int, y1: int, label: str, cls_str: str):
+def log_csv_detection(x1, y1, label, cls_str):
     """Append one detection row to the CSV."""
     timestamp = datetime.now().isoformat()
     top_corner_str = f"{x1},{y1}"  # (x1,y1) as "x,y"
@@ -395,43 +416,207 @@ def log_csv_detection(x1: int, y1: int, label: str, cls_str: str):
     except Exception as e:
         print(f"Failed to write CSV detection: {e}")
 
-# ========== SPATIAL DEDUPE (NO TIME WINDOW) ==========
+# ========== SIMPLE TRACKER ==========
 
-def is_new_spatial_event(x1: int, y1: int, coarse: str, label: str) -> bool:
-    """
-    Returns True if this looks like a NEW item in this region
-    for the entire runtime of the script.
-    
-    We define:
-      - key_class = coarse if available, else 'unknown'
-      - region_x = x1 // POS_MARGIN_PX
-      - region_y = y1 // POS_MARGIN_PX
-      - event_key = f"{key_class}:{region_x}:{region_y}"
-    """
-    global SEEN_EVENTS
+class Track:
+    def __init__(self, track_id, bbox, label, conf, coarse, bin_type):
+        self.id = track_id
+        self.bbox = bbox              # (x1, y1, x2, y2)
+        self.labels = [label]
+        self.confs = [conf]
+        self.coarse = coarse
+        self.bin_type = bin_type
+        self.frames_seen = 1
+        self.missed = 0
+        self.logged = False
 
-    key_class = coarse if coarse is not None else "unknown"
+    def update(self, bbox, label, conf, coarse, bin_type):
+        self.bbox = bbox
+        self.labels.append(label)
+        self.confs.append(conf)
+        self.frames_seen += 1
+        self.missed = 0
+        # If we didn't have a coarse/bin_type yet and now we do, attach it:
+        if self.coarse is None and coarse is not None:
+            self.coarse = coarse
+        if self.bin_type is None and bin_type is not None:
+            self.bin_type = bin_type
+
+    def predicted_label(self):
+        label_counter = Counter(self.labels)
+        final_label = label_counter.most_common(1)[0][0]
+        avg_conf = float(sum(self.confs) / len(self.confs))
+        return final_label, self.coarse, self.bin_type, avg_conf
+
+TRACKS = {}
+NEXT_TRACK_ID = 0
+
+def compute_iou(box1, box2):
+    x1, y1, x2, y2 = box1
+    x1b, y1b, x2b, y2b = box2
+
+    inter_x1 = max(x1, x1b)
+    inter_y1 = max(y1, y1b)
+    inter_x2 = min(x2, x2b)
+    inter_y2 = min(y2, y2b)
+
+    inter_w = max(0, inter_x2 - inter_x1)
+    inter_h = max(0, inter_y2 - inter_y1)
+    inter_area = inter_w * inter_h
+
+    area1 = max(0, x2 - x1) * max(0, y2 - y1)
+    area2 = max(0, x2b - x1b) * max(0, y2b - y1b)
+
+    denom = float(area1 + area2 - inter_area)
+    if denom <= 0:
+        return 0.0
+    return inter_area / denom
+
+def make_region_key(coarse, bbox):
+    x1, y1, _, _ = bbox
     region_x = x1 // POS_MARGIN_PX
     region_y = y1 // POS_MARGIN_PX
+    key_class = coarse if coarse is not None else "unknown"
+    return f"{key_class}:{region_x}:{region_y}"
 
-    event_key = f"{key_class}:{region_x}:{region_y}"
+def update_tracks(detections):
+    """
+    detections: list of dicts:
+        { 'bbox': (x1,y1,x2,y2), 'label', 'conf', 'coarse', 'bin_type' }
+    Returns list of 'new stable events' for stats.
+    """
+    global TRACKS, NEXT_TRACK_ID, SEEN_EVENTS
+    new_events = []
+    used_tracks = set()
 
-    if event_key in SEEN_EVENTS:
-        return False
+    # --- Associate detections to existing tracks ---
+    for det in detections:
+        bbox = det['bbox']
+        best_iou = 0.0
+        best_id = None
 
-    SEEN_EVENTS.add(event_key)
-    return True
+        for tid, tr in TRACKS.items():
+            i = compute_iou(bbox, tr.bbox)
+            if i > best_iou:
+                best_iou = i
+                best_id = tid
 
+        if best_iou > TRACK_IOU_THRESH and best_id is not None:
+            TRACKS[best_id].update(
+                bbox=bbox,
+                label=det['label'],
+                conf=det['conf'],
+                coarse=det['coarse'],
+                bin_type=det['bin_type'],
+            )
+            used_tracks.add(best_id)
+        else:
+            tr = Track(
+                NEXT_TRACK_ID,
+                bbox=bbox,
+                label=det['label'],
+                conf=det['conf'],
+                coarse=det['coarse'],
+                bin_type=det['bin_type'],
+            )
+            TRACKS[NEXT_TRACK_ID] = tr
+            used_tracks.add(NEXT_TRACK_ID)
+            NEXT_TRACK_ID += 1
+
+    # --- Update missed counts / remove dead tracks ---
+    dead_ids = []
+    for tid, tr in TRACKS.items():
+        if tid not in used_tracks:
+            tr.missed += 1
+            if tr.missed > MAX_TRACK_MISSES:
+                dead_ids.append(tid)
+    for tid in dead_ids:
+        del TRACKS[tid]
+
+    # --- Decide which tracks are now 'stable' and log once ---
+    for tid, tr in TRACKS.items():
+        if tr.logged:
+            continue
+        if tr.frames_seen < MIN_STABLE_FRAMES:
+            continue
+
+        final_label, coarse, bin_type, avg_conf = tr.predicted_label()
+
+        # UNKNOWN / unmapped
+        if coarse is None or bin_type is None:
+            reg_key = make_region_key("unknown", tr.bbox)
+            if reg_key in SEEN_EVENTS:
+                tr.logged = True
+                continue
+
+            SEEN_EVENTS.add(reg_key)
+            log_unknown_label(final_label)
+            x1, y1, _, _ = tr.bbox
+            log_csv_detection(x1, y1, final_label, "unknown")
+            tr.logged = True
+            continue
+
+        # Known coarse/bin
+        coarse_cat, co2_item_kg, co2_saved_kg = estimate_co2(coarse, bin_type)
+        reg_key = make_region_key(coarse_cat, tr.bbox)
+
+        if reg_key in SEEN_EVENTS:
+            # Already logged an object of this type in this region
+            tr.logged = True
+            continue
+
+        SEEN_EVENTS.add(reg_key)
+
+        log_new_item(final_label, coarse_cat, bin_type, co2_item_kg, co2_saved_kg)
+        x1, y1, _, _ = tr.bbox
+        log_csv_detection(x1, y1, final_label, coarse_cat)
+
+        new_events.append({
+            'label': final_label,
+            'coarse': coarse_cat,
+            'bin_type': bin_type,
+            'co2_item': co2_item_kg,
+            'co2_saved': co2_saved_kg,
+            'conf': avg_conf,
+            'track_id': tid,
+            'bbox': tr.bbox
+        })
+
+        tr.logged = True
+
+    return new_events
+
+# ========================================
+# Frame Processing
 # ========================================
 
 def process_frame(frame, model, stats):
     """Process a single frame with timing"""
     start_time = time.time()
-    detections_data = []
-    
+    detections_for_tracker = []
+
+    h, w = frame.shape[:2]
+
+    # ---- Crop to bin region, if enabled ----
+    if USE_ROI:
+        x1_roi = int(w * ROI_LEFT_FRAC)
+        x2_roi = int(w * ROI_RIGHT_FRAC)
+        y1_roi = int(h * ROI_TOP_FRAC)
+        y2_roi = int(h * ROI_BOTTOM_FRAC)
+        infer_frame = frame[y1_roi:y2_roi, x1_roi:x2_roi]
+    else:
+        x1_roi = 0
+        y1_roi = 0
+        infer_frame = frame
+
     # Run YOLO inference
-    results = model(frame, verbose=False, conf=CONF_THRES, iou=IOU_THRES)
-    results = results[0]
+    results = model(
+        infer_frame,
+        verbose=False,
+        conf=CONF_THRES,
+        iou=IOU_THRES,
+        imgsz=IMG_SIZE,
+    )[0]
     
     for box in results.boxes:
         conf = float(box.conf)
@@ -440,66 +625,59 @@ def process_frame(frame, model, stats):
         
         x1, y1, x2, y2 = box.xyxy[0]
         x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+
+        # shift coordinates back into full-frame space if using ROI
+        x1 += x1_roi
+        x2 += x1_roi
+        y1 += y1_roi
+        y2 += y1_roi
+
+        box_area = (x2 - x1) * (y2 - y1)
+        if box_area < MIN_BOX_AREA:
+            continue
+
         cls = int(box.cls)
         label = results.names[cls]
 
-        # Tracking disabled for YOLO-World
-        track_id = None
-        
         coarse, bin_type = classify_item(label)
 
-        # ---- Unknown / unmapped items ----
-        if bin_type is None:
-            # spatial dedupe for unknowns too (by label + region)
-            if is_new_spatial_event(x1, y1, None, label):
-                log_unknown_label(label)
-                log_csv_detection(x1, y1, label, "unknown")
-            # stats currently ignore unknowns
-            continue
+        detections_for_tracker.append({
+            'bbox': (x1, y1, x2, y2),
+            'label': label,
+            'conf': conf,
+            'coarse': coarse,
+            'bin_type': bin_type
+        })
 
-        # Known + mapped item: spatial dedupe for the entire run
-        if is_new_spatial_event(x1, y1, coarse, label):
-            # Only NEW events update logs / stats / CSV
+        # ---- Drawing overlay (real-time view only) ----
+        if bin_type is not None:
             coarse_cat, co2_item_kg, co2_saved_kg = estimate_co2(coarse, bin_type)
-
-            log_new_item(label, coarse_cat, bin_type, co2_item_kg, co2_saved_kg)
-
-            detections_data.append({
-                'label': label,
-                'coarse': coarse_cat,
-                'bin_type': bin_type,
-                'co2_item': co2_item_kg,
-                'co2_saved': co2_saved_kg,
-                'conf': conf,
-                'track_id': track_id,
-                'bbox': (x1, y1, x2, y2)
-            })
-
-            log_csv_detection(x1, y1, label, coarse_cat)
+            co2_item_g = co2_item_kg * 1000.0
+            co2_saved_g = co2_saved_kg * 1000.0
+            
+            if co2_saved_g > 0:
+                co2_text = f"{co2_saved_g:.0f}g CO₂ saved"
+            else:
+                co2_text = f"{co2_item_g:.0f}g CO₂"
+            
+            color = (0, 255, 0) if bin_type == "recycling" else (0, 165, 255)
+            text = f"{label} | {bin_type} | {co2_text} ({conf:.2f})"
         else:
-            # Even if not new, we still compute CO2 for overlay only
-            coarse_cat, co2_item_kg, co2_saved_kg = estimate_co2(coarse, bin_type)
-
-        # Draw bounding box (always, so user sees live tracking)
-        color = (0, 255, 0) if bin_type == "recycling" else (0, 165, 255)
+            # Unknown type
+            color = (0, 0, 255)
+            text = f"{label} ({conf:.2f})"
+        
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-        
-        # Prepare text
-        co2_item_g = co2_item_kg * 1000.0
-        co2_saved_g = co2_saved_kg * 1000.0
-        
-        if co2_saved_g > 0:
-            co2_text = f"{co2_saved_g:.0f}g CO₂ saved"
-        else:
-            co2_text = f"{co2_item_g:.0f}g CO₂"
-        
-        text = f"{label} | {bin_type} | {co2_text} ({conf:.2f})"
-        
-        cv2.putText(frame, text, (x1, y1 - 5),
+        cv2.putText(frame, text, (x1, max(y1 - 5, 15)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
     
-    # Update stats with only NEW events
-    stats.update(detections_data)
+    # --- Update tracker & stats using NEW stable events ---
+    if USE_SIMPLE_TRACKER:
+        new_events = update_tracks(detections_for_tracker)
+    else:
+        new_events = []  # you could fall back to per-frame logging if desired
+
+    stats.update(new_events)
     processing_time = time.time() - start_time
     stats.add_processing_time(processing_time)
     
@@ -509,15 +687,11 @@ def draw_info_panel(frame, stats):
     """Draw info panel with real-time statistics"""
     summary = stats.get_summary()
     
-    # Create semi-transparent overlay
     overlay = frame.copy()
-    height, width = frame.shape[:2]
     
-    # Draw background rectangle
     cv2.rectangle(overlay, (10, 10), (400, 200), (0, 0, 0), -1)
     frame = cv2.addWeighted(frame, 0.7, overlay, 0.3, 0)
     
-    # Draw text
     y_offset = 35
     line_height = 25
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -527,8 +701,8 @@ def draw_info_panel(frame, stats):
     lines = [
         f"FPS: {summary['avg_fps']:.1f}",
         f"Processing: {summary['avg_processing_time_ms']:.1f}ms",
-        f"Detections (unique-ish): {summary['total_detections']}",
-        f"Unique Items: {summary['unique_items']}",
+        f"Detections (logged objects): {summary['total_detections']}",
+        f"Unique Items (tracks): {summary['unique_items']}",
         f"Recycling Rate: {summary['recycling_rate_percent']:.1f}%",
         f"CO2 Saved: {summary['total_co2_saved_kg']:.3f}kg",
     ]
@@ -539,13 +713,17 @@ def draw_info_panel(frame, stats):
     
     return frame
 
+# ========================================
+# Main
+# ========================================
+
 def main():
     # Check GPU availability
     device = check_gpu_availability()
     
-    # Initialize model
+    # Initialize model (medium YOLO-World)
     print("Loading YOLO model...")
-    model = YOLO("yolov8s-worldv2.pt")
+    model = YOLO("yolov8m-worldv2.pt")
     
     # Set classes for YOLO-World (do this BEFORE any inference)
     DETECTION_PROMPTS = list(PROMPT_TO_COARSE.keys())

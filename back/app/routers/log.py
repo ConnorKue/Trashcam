@@ -1,35 +1,32 @@
 from fastapi import APIRouter
+from pathlib import Path
+import csv
+from datetime import datetime
 
-router = APIRouter(
-    prefix="/logs",
-    tags=["Logs"]
-)
+router = APIRouter(prefix="/logs", tags=["Logs"])
+
+def get_logs_path() -> Path:
+    return Path(__file__).resolve().parents[2] / "current.csv"
 
 
 @router.get("/")
-def LogOutput(State: str = "", curLine: int = 0):
-    def read_lines_from(filepath, start_line):
-        lines = []
-        with open(filepath, 'r') as f:
-            for current_line_number, line in enumerate(f):
-                if current_line_number >= start_line:
-                    lines.append(line.strip())
-        return lines
+def get_logs():
+    file_path = get_logs_path()
 
-    file_path = "../../logs.csv"
-    log_lines = read_lines_from(file_path, curLine)
+    logs = []
 
+    with file_path.open("r", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                ts = datetime.fromisoformat(row["timestamp"]).strftime("%H:%M:%S")
+            except:
+                ts = row["timestamp"]
 
-    for i in range(len(log_lines)):
-        log_lines[i] = log_lines[i].split(",")
-        
-    output = []
-    for log in log_lines:
-        if State == "" or log[3] == State:
-            output.append(log[0] + "Correct" + log[3])    
-        else:
-            output.append(log[0] + "Incorrect" + log[3])
+            logs.append({
+                "timestamp": ts,
+                "item": row["item"],
+                "class": row["class"]
+            })
 
-    
-    return {"logs": output}
-    
+    return {"logs": logs}

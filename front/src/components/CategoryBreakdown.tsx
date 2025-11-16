@@ -4,8 +4,6 @@ interface CategoryBreakdownProps {
   categories: {
     recyclable: number;
     organic: number;
-    plastic: number;
-    paper: number;
     general: number;
   };
 }
@@ -13,11 +11,11 @@ interface CategoryBreakdownProps {
 export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
   const categoryConfig = [
     { key: 'recyclable', label: 'RECYCLABLE', icon: Recycle, color: '#50d0e0' },
-    { key: 'organic', label: 'ORGANIC', icon: Leaf, color: '#60d060' },
-    { key: 'plastic', label: 'PLASTIC', icon: Package, color: '#d050d0' },
-    { key: 'paper', label: 'PAPER', icon: FileText, color: '#d0a040' },
-    { key: 'general', label: 'GENERAL', icon: Trash2, color: '#999999' }
+    { key: 'organic', label: 'ORGANIC/COMPOST', icon: Leaf, color: '#60d060' },
+    { key: 'general', label: 'GENERAL TRASH', icon: Trash2, color: '#d050d0' }
   ];
+  // purple: #d050d0
+  // orange: #d0a040
 
   const total = Object.values(categories).reduce((sum, count) => sum + count, 0);
 

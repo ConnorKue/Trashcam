@@ -1,24 +1,21 @@
 {
-  "runtime_seconds": 657.8853397369385,
-  "frames_processed": 12753,
-  "total_detections": 80,
-  "unique_items": 0,
-  "avg_confidence": 0.3526651617139578,
-  "avg_processing_time_ms": 36.153879165649414,
-  "avg_fps": 23.310726032119994,
+  "runtime_seconds": 137.6946349143982,
+  "frames_processed": 2030,
+  "total_detections": 9,
+  "unique_items": 9,
+  "avg_confidence": 0.42253871896752604,
+  "avg_processing_time_ms": 61.49069547653198,
+  "avg_fps": 15.606528425541455,
   "items_by_type": {
-    "metal": 17,
-    "paper": 12,
-    "liquid": 23,
-    "plastic": 16,
-    "glass": 12
+    "liquid": 2,
+    "plastic": 7
   },
   "items_by_bin": {
-    "recycling": 57,
-    "trash": 23
+    "recycling": 7,
+    "trash": 2
   },
-  "recycling_rate_percent": 71.25,
-  "total_co2_saved_kg": 3.2059999999999995,
-  "total_co2_footprint_kg": 5.719999999999996,
-  "detections_per_hour": 437.7662528779855
+  "recycling_rate_percent": 77.77777777777779,
+  "total_co2_saved_kg": 0.39199999999999996,
+  "total_co2_footprint_kg": 0.6,
+  "detections_per_hour": 235.30328556477446
 }

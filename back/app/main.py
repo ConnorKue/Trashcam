@@ -6,7 +6,7 @@ from .routers import health
 from .routers import clearData
 from .routers import totalTrash
 from .routers import log   
-
+from .routers import fill
 
 def create_app():
     app = FastAPI(
@@ -14,14 +14,9 @@ def create_app():
         version="1.0.0"
     )
     
-    origins = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ]
-
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
+        allow_origins=["*"],  
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -30,6 +25,7 @@ def create_app():
     app.include_router(clearData.router)
     app.include_router(totalTrash.router)
     app.include_router(log.router)
+    app.include_router(fill.router)
 
     return app
 
