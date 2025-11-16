@@ -42,7 +42,8 @@ export async function getLogs() {
 export async function getFill() {
   // Fill router: prefix="/fill", @router.get("/")
   // => GET /fill/
-  return request("/fill/");
+  const res = await request("/fill/");
+  return res.fillPercent.toFixed(2);   
 }
 
 export async function clearCurrentData() {

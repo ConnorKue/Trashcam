@@ -5,11 +5,7 @@ import { EventLog } from "./EventLog";
 import { Trash2 } from "lucide-react";
 import { getLogs, getFill } from "../api";
 
-export type EventType =
-  | "deposit"
-  | "empty"
-  | "alert"
-  | "contamination";
+export type EventType = "deposit" | "empty" | "alert" | "contamination";
 
 export interface TrashCanData {
   id: string;
@@ -23,6 +19,8 @@ export interface TrashCanData {
   categories: {
     recyclable: number;
     organic: number;
+    plastic: number;
+    paper: number;
     general: number;
   };
   events: Array<{
@@ -40,7 +38,7 @@ const initialTrashCanData: TrashCanData = {
   lastEmptied: new Date().toISOString(),
   status: "normal",
   location: "Building A",
-  targetCategory: "recyclable",
+  targetCategory: "recycling",
   categories: {
     recyclable: 0,
     organic: 0,
@@ -219,6 +217,21 @@ export function Dashboard() {
     );
   };
 
+  const resetTrashCan = (id: string) => {
+    setTrashCans((prev) =>
+      prev.map((can) =>
+        can.id === id
+          ? {
+              ...initialTrashCanData,
+              id: can.id,
+              name: can.name,
+              location: can.location,
+            }
+          : can
+      )
+    );
+  };
+
   const emptyTrashCan = (id: string) => {
     setTrashCans((prev) =>
       prev.map((can) => {
@@ -315,6 +328,7 @@ export function Dashboard() {
               key={trashCan.id}
               data={trashCan}
               onUpdate={(updates) => updateTrashCan(trashCan.id, updates)}
+              onReset={() => resetTrashCan(trashCan.id)}
               emptyTrash={() => emptyTrashCan(trashCan.id)}
               currentTime={currentTime}
             />
@@ -325,6 +339,7 @@ export function Dashboard() {
             <EventLog
               key={`events-${trashCan.id}`}
               events={trashCan.events}
+              targetCategory={trashCan.targetCategory}
               onRemoveEvent={(index) => removeEvent(trashCan.id, index)}
             />
           ))}
