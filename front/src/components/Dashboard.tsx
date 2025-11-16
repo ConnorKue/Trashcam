@@ -59,7 +59,7 @@ const classifyItem = (cls: string | undefined): "recyclable" | "organic" | "gene
   const c = cls.toLowerCase();
   if (c.includes("plastic") || c.includes("paper") || c.includes("cardboard") ||
       c.includes("metal") || c.includes("glass") || c.includes("can") ||
-      c.includes("aluminum") || c.includes("recyclable")) {
+      c.includes("aluminum") || c.includes("recyclable") || c.includes("recycling")) {
     return "recyclable";
   } else if (c.includes("organic") || c.includes("compost") || c.includes("food") ||
              c.includes("biodegradable") || c.includes("fruit") || c.includes("vegetable")) {
@@ -110,6 +110,14 @@ export function Dashboard() {
     return () => clearInterval(healthIntervalId);
   }, []);
 
+  const getItem = (msg) => {
+    const insideParens = msg.split('(')[1];
+    if (!insideParens) return "item";
+    const dashSplit = insideParens.split(' - ');
+    if (dashSplit.length > 1) return dashSplit[0];
+    return insideParens.split(')')[0] || "item";
+  };
+
   useEffect(() => {
     setTrashCans((prev) =>
       prev.map((can) => ({
@@ -119,13 +127,13 @@ export function Dashboard() {
             const isContamination = event.category !== can.targetCategory;
             const newType: EventType = isContamination ? "contamination" : "deposit";
             const message = isContamination
-              ? `Non-${can.targetCategory.toUpperCase()}: ${event.category} (${event.message.split('(')[1]?.split(' – ')[0] || "item"})`
-              : `${event.category} detected (${event.message.split('(')[1]?.split(' – ')[0] || "item"})`;
+              ? `Non-${can.targetCategory.toUpperCase()}: ${event.category} (${getItem(event.message)})`
+              : `${event.category} detected (${getItem(event.message)})`;
 
             return {
               ...event,
               type: newType,
-
+              message,
             };
           }
           return event;
@@ -143,25 +151,19 @@ export function Dashboard() {
     async function loadEvents() {
       try {
         const [logsData, fillData] = await Promise.all([
-          getLogs().catch((err) => {
-            console.error("getLogs failed:", err);
-            return null;
-          }),
-          getFill().catch((err) => {
-            console.error("getFill failed:", err);
-            return 0;
-          }),
+          getLogs().catch(() => null),
+          getFill().catch(() => 0),
         ]);
-        const logs = logsData.logs as BackendLog[];
-        console.log(logsData);
-        const fill = fillData;
+        const logs = logsData?.logs as BackendLog[] | undefined;
+        const fill = fillData ?? 0;
+        if (!logs) return;
         setTrashCans((prev) =>
           prev.map((can, index) => {
             if (index !== 0) return can;
 
             let updatedCategories = { ...can.categories };
             let changes = 0;
-            const newEvents: TrashCanData["events"][] = [];
+            const newEvents: TrashCanData["events"] = [];
             let hasNewItems = false;
 
             // Process each log to update categories and create events
@@ -192,7 +194,7 @@ export function Dashboard() {
               // create event
               const eventType: EventType = isContamination ? "contamination" : "deposit";
               const message = isContamination
-                ? `Non-${can.targetCategory.toUpperCase()}: ${detectedCategory} (${log.item} – ${log.classification || "unknown"})`
+                ? `Non-${can.targetCategory.toUpperCase()}: ${detectedCategory} (${log.item})`
                 : `${log.classification || "item"} detected (${log.item})`;
 
               newEvents.push({
