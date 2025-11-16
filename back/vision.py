@@ -75,10 +75,44 @@ CATEGORY_MAP = {
 
 currentItems = []
 
+def storeLastSeen():
+    with open("lastSeen.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["item", "time", "x", "y"])
+        for item, d in last_seen.items():
+            w.writerow([item, d["time"], d["x"], d["y"]])
+
+
+def restoreLastSeen():
+    last_seen.clear()
+    if not os.path.exists("lastSeen.csv"):
+        return
+    with open("lastSeen.csv", "r", newline="") as f:
+        r = csv.DictReader(f)
+        for row in r:
+            item = row["item"]
+            last_seen[item] = {
+                "time": float(row["time"]),
+                "x": int(row["x"]),
+                "y": int(row["y"])
+            }
+
+
+
+
+
+
 # per-item state: when/where we last logged that item
 last_seen = {}              # item -> {"time": float, "x": int, "y": int}
+restoreLastSeen()
 TIME_THRESH = 10.0           # seconds between logs for same item
 DIST_THRESH = 50.0          # pixels between logs for same item
+
+
+
+
+
+
 
 
 def classify_into_3(item: str) -> str:
@@ -208,6 +242,9 @@ def main():
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):
             break
+
+
+    storeLastSeen()
 
     cap.release()
     cv2.destroyAllWindows()
