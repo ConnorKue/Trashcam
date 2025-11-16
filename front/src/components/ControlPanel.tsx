@@ -42,19 +42,10 @@ export function ControlPanel({
   }, [data, isOpen]);
 
   const handleSave = () => {
-    // Recalculate fillLevel based on category totals
-    const totalItems = Object.values(editedData.categories).reduce(
-      (sum, count) => sum + count,
-      0
-    );
-    const calculatedFillLevel = Math.min(
-      100,
-      Math.round((totalItems / 50) * 100)
-    ); // Assuming 50 items = 100%
-    const calculatedWeight = Math.min(25, totalItems * 0.5); // Assuming 0.5kg per item, max 25kg
+    const total = Object.values(data.categories).reduce((sum, count) => sum + count, 0);
+    const calculatedWeight = Math.min(25, total * 0.5);
     const updates = {
       ...editedData,
-      fillLevel: calculatedFillLevel,
       weight: parseFloat(calculatedWeight.toFixed(1)),
     };
     onUpdate(updates);
