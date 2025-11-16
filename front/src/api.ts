@@ -1,6 +1,3 @@
-// src/api.ts
-
-// Base URL for FastAPI backend
 const API_BASE_URL = "http://localhost:8000"; // hard-coded as you had
 
 async function request(path: string, options: RequestInit = {}) {

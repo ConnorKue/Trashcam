@@ -24,15 +24,12 @@ import { clearCurrentData } from "../api";
 interface ControlPanelProps {
   data: TrashCanData;
   onUpdate: (updates: Partial<TrashCanData>) => void;
-  onReset: () => void;
-  emptyTrash: () => void;
   currentTime: Date;
 }
 
 export function ControlPanel({
   data,
   onUpdate,
-  onReset,
   emptyTrash,
 }: ControlPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -85,22 +82,20 @@ export function ControlPanel({
 
   // Only two target modes now
   const targetModeOptions = {
-    recycling: "RECYCLING MODE",
-    trash: "TRASH MODE",
+    recyclable: "RECYCLING MODE",
+    organic: "ORGANIC MODE",
+    general: "TRASH MODE",
   } as const;
 
-  // These are still the detailed category counts, keep as-is
   const categoryLabels = {
     recyclable: "RECYCLABLE",
-    organic: "ORGANIC",
-    plastic: "PLASTIC",
-    paper: "PAPER",
-    general: "GENERAL",
+    organic: "ORGANIC/COMPOST",
+    general: "GENERAL TRASH",
   };
 
   const handleEmptyTrashClick = async () => {
     try {
-      await clearCurrentData(); // DELETE /clearData → reset backend file
+      await clearCurrentData(); // DELETE /clearData -> reset backend file
     } catch (err) {
       console.error("Failed to clear backend data:", err);
     }
@@ -130,7 +125,7 @@ export function ControlPanel({
           <Select
             value={data.targetCategory}
             onValueChange={(value) =>
-              onUpdate({ targetCategory: value as "recycling" | "trash" })
+              onUpdate({ targetCategory: value as "recyclable" | "organic/compost" | "general" })
             }
           >
             <SelectTrigger
@@ -294,13 +289,12 @@ export function ControlPanel({
                 >
                   CATEGORY COUNTS:
                 </Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   {Object.entries(categoryLabels).map(([key, label]) => (
                     <div key={key}>
                       <Label
                         className="text-[#50d070]/70 tracking-wide mb-2 block"
-                        style={{ fontFamily: "monospace" }}
-                      >
+                        style={{ fontFamily: "monospace" }}>
                         {label}:
                       </Label>
                       <Input
@@ -356,16 +350,6 @@ export function ControlPanel({
         >
           <Trash2 className="w-4 h-4 mr-2" />
           EMPTY TRASH
-        </Button>
-
-        {/* Reset Button */}
-        <Button
-          onClick={onReset}
-          className="w-full bg-[#1a1a3e] border-2 border-[#ffaa44] text-[#ffaa44] hover:bg-[#ffaa44] hover:text-[#0f0f23] tracking-wider transition-colors"
-          style={{ fontFamily: "monospace" }}
-        >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          RESET TO DEFAULT
         </Button>
       </div>
     </div>

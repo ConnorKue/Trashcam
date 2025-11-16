@@ -15,12 +15,14 @@ export interface TrashCanData {
   lastEmptied: string; // ISO timestamp
   status: "normal" | "warning" | "critical";
   location: string;
+<<<<<<< HEAD
   targetCategory: "recycling" | "trash";
+=======
+  targetCategory: "recyclable" | "organic/compost" | "general";
+>>>>>>> c34b51f1f3de4e9d78bd7a56e90672b3af3ea9c0
   categories: {
     recyclable: number;
     organic: number;
-    plastic: number;
-    paper: number;
     general: number;
   };
   events: Array<{
@@ -40,11 +42,9 @@ const initialTrashCanData: TrashCanData = {
   location: "Building A",
   targetCategory: "recycling",
   categories: {
-    recyclable: 8,
-    organic: 3,
-    plastic: 12,
-    paper: 15,
-    general: 7,
+    recyclable: 20,
+    organic: 15,
+    general: 10,
   },
   events: [],
 };
@@ -210,21 +210,6 @@ export function Dashboard() {
     );
   };
 
-  const resetTrashCan = (id: string) => {
-    setTrashCans((prev) =>
-      prev.map((can) =>
-        can.id === id
-          ? {
-              ...initialTrashCanData,
-              id: can.id,
-              name: can.name,
-              location: can.location,
-            }
-          : can
-      )
-    );
-  };
-
   const emptyTrashCan = (id: string) => {
     setTrashCans((prev) =>
       prev.map((can) => {
@@ -319,7 +304,6 @@ export function Dashboard() {
               key={trashCan.id}
               data={trashCan}
               onUpdate={(updates) => updateTrashCan(trashCan.id, updates)}
-              onReset={() => resetTrashCan(trashCan.id)}
               emptyTrash={() => emptyTrashCan(trashCan.id)}
               currentTime={currentTime}
             />

@@ -1,6 +1,6 @@
 import { MapPin, Weight, Clock, AlertTriangle } from "lucide-react";
 import { TrashCanData } from "./Dashboard";
-import { PixelProgressBar } from "./PixelProgressBar";
+import { PixelProgressBar } from "./ui/PixelProgressBar";
 import { CategoryBreakdown } from "./CategoryBreakdown";
 import { ContaminationTracker } from "./ContaminationTracker";
 import { ControlPanel } from "./ControlPanel";
@@ -8,7 +8,6 @@ import { ControlPanel } from "./ControlPanel";
 interface TrashCanCardProps {
   data: TrashCanData;
   onUpdate: (updates: Partial<TrashCanData>) => void;
-  onReset: (id: string) => void;
   emptyTrash: (id: string) => void;
   currentTime: Date;
 }
@@ -37,7 +36,7 @@ const getTimeAgo = (timestamp: string, currentTime: Date): string => {
   }
 };
 
-export function TrashCanCard({ data, onUpdate, onReset, emptyTrash, currentTime }: TrashCanCardProps) {
+export function TrashCanCard({ data, onUpdate, emptyTrash, currentTime }: TrashCanCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "critical":
@@ -149,7 +148,6 @@ export function TrashCanCard({ data, onUpdate, onReset, emptyTrash, currentTime 
       <ControlPanel
       data={data}
       onUpdate={onUpdate}
-      onReset={() => onReset(data.id)}
       emptyTrash={() => emptyTrash(data.id)}
       currentTime={currentTime}
       />
